@@ -6,7 +6,14 @@ const Register = require('../models/register');
 // GET all logins
 exports.getAll = async (req, res) => {
   try {
-    const logins = await Login.findAll({ attributes: ['id', 'reg_id', 'username', 'password'] });
+    const logins = await Login.findAll({
+      attributes: ['id', 'reg_id', 'username', 'password'],
+      include: [{
+        model: Register,
+        attributes: [],
+        where: { role: 'admin' }
+      }]
+    });
     res.json(logins);
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -10,4 +10,7 @@ const Login = sequelize.define('Login', {
   timestamps: false
 });
 
+const Register = require('./register');
+Login.belongsTo(Register, { foreignKey: 'reg_id', targetKey: 'id' });
+
 module.exports = Login;

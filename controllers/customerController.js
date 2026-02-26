@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const Customer = require('../models/Customer');
 const Register = require('../models/register');
 const Login = require('../models/login');
@@ -5,7 +6,11 @@ const Address = require('../models/address');
 
 exports.getAll = async (req, res) => {
   try {
-    const customers = await Customer.findAll();
+    const customers = await Customer.findAll({
+      where: {
+        first_name: { [Op.not]: null, [Op.ne]: '' }
+      }
+    });
     res.json(customers);
   } catch (err) {
     res.status(500).json({ error: err.message });
