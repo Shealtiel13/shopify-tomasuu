@@ -35,6 +35,14 @@ export default function Login() {
         return
       }
 
+      if (redirectTo === '/dashboard' && data.role === 'admin') {
+        setError('Admin accounts cannot log in as a regular user.')
+        localStorage.removeItem('token')
+        localStorage.removeItem('username')
+        localStorage.removeItem('role')
+        return
+      }
+
       navigate(redirectTo)
     } catch {
       setError('Something went wrong. Please try again.')
