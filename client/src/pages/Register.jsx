@@ -113,19 +113,19 @@ export default function Register() {
                       <div>
                         <label className="block text-gray-300 text-sm font-medium mb-1">First Name</label>
                         <input type="text" name="first_name" value={form.first_name} onChange={handleChange} required
-                          className={inputClass} placeholder="John" />
+                          className={inputClass} placeholder="Enter your first name" />
                       </div>
                       <div>
                         <label className="block text-gray-300 text-sm font-medium mb-1">Last Name</label>
                         <input type="text" name="last_name" value={form.last_name} onChange={handleChange} required
-                          className={inputClass} placeholder="Doe" />
+                          className={inputClass} placeholder="Enter your last name" />
                       </div>
                     </div>
 
                     <div>
                       <label className="block text-gray-300 text-sm font-medium mb-1">Email</label>
                       <input type="email" name="email" value={form.email} onChange={handleChange} required
-                        className={inputClass} placeholder="john@email.com" />
+                        className={inputClass} placeholder="Enter your email address" />
                     </div>
                   </>
                 )}
@@ -134,12 +134,12 @@ export default function Register() {
                   <div>
                     <label className="block text-gray-300 text-sm font-medium mb-1">Username</label>
                     <input type="text" name="username" value={form.username} onChange={handleChange} required
-                      className={inputClass} placeholder="johndoe" />
+                      className={inputClass} placeholder="Choose a username" />
                   </div>
                   <div>
                     <label className="block text-gray-300 text-sm font-medium mb-1">Password</label>
                     <input type="password" name="password" value={form.password} onChange={handleChange} required
-                      className={inputClass} placeholder="********" />
+                      className={inputClass} placeholder="Create a password" />
                   </div>
                 </div>
 
@@ -149,12 +149,12 @@ export default function Register() {
                       <div>
                         <label className="block text-gray-300 text-sm font-medium mb-1">Phone</label>
                         <input type="text" name="phone" value={form.phone} onChange={handleChange} required
-                          className={inputClass} placeholder="1234567890" />
+                          className={inputClass} placeholder="Enter your phone number" />
                       </div>
                       <div>
                         <label className="block text-gray-300 text-sm font-medium mb-1">Age</label>
                         <input type="number" name="age" value={form.age} onChange={handleChange} required
-                          className={inputClass} placeholder="25" />
+                          className={inputClass} placeholder="Enter your age" />
                       </div>
                     </div>
 
@@ -169,18 +169,18 @@ export default function Register() {
                       <div>
                         <label className="block text-gray-300 text-sm font-medium mb-1">Street Address</label>
                         <input type="text" name="street_address" value={form.street_address} onChange={handleChange} required
-                          className={inputClass} placeholder="123 Main St" />
+                          className={inputClass} placeholder="Enter your street address" />
                       </div>
                       <div className="grid grid-cols-2 gap-4 mt-3">
                         <div>
                           <label className="block text-gray-300 text-sm font-medium mb-1">City</label>
                           <input type="text" name="city" value={form.city} onChange={handleChange} required
-                            className={inputClass} placeholder="Manila" />
+                            className={inputClass} placeholder="Enter your city" />
                         </div>
                         <div>
                           <label className="block text-gray-300 text-sm font-medium mb-1">Postal Code</label>
                           <input type="text" name="postal_code" value={form.postal_code} onChange={handleChange} required
-                            className={inputClass} placeholder="1000" />
+                            className={inputClass} placeholder="Enter your postal code" />
                         </div>
                       </div>
                     </div>
