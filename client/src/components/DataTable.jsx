@@ -1,28 +1,28 @@
 export default function DataTable({ columns, data, onEdit, onDelete, emptyMessage = 'No data found' }) {
   if (data.length === 0) {
     return (
-      <div className="bg-gray-800 rounded-lg p-8 text-center text-gray-500">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center text-gray-500">
         {emptyMessage}
       </div>
     )
   }
 
   return (
-    <div className="bg-gray-800 rounded-lg overflow-hidden overflow-x-auto">
+    <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden overflow-x-auto">
       <table className="w-full">
-        <thead className="bg-gray-700">
+        <thead className="bg-gray-100 dark:bg-gray-700">
           <tr>
             {columns.map(col => (
-              <th key={col.key} className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">{col.label}</th>
+              <th key={col.key} className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase">{col.label}</th>
             ))}
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Actions</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase">Actions</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-700">
+        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
           {data.map((row, i) => (
-            <tr key={i} className="hover:bg-gray-700/50">
+            <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
               {columns.map(col => (
-                <td key={col.key} className={`px-4 py-3 ${col.bold ? 'text-white font-medium' : 'text-gray-300'}`}>
+                <td key={col.key} className={`px-4 py-3 ${col.bold ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-600 dark:text-gray-300'}`}>
                   {col.mask ? '••••••••' : (row[col.key] || '')}
                 </td>
               ))}

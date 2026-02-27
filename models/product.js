@@ -7,7 +7,8 @@ const Product = sequelize.define('Product', {
   price: DataTypes.DECIMAL,
   quantity: DataTypes.BIGINT,
   category: DataTypes.STRING,
-  description: DataTypes.STRING
+  description: DataTypes.TEXT,
+  image_url: DataTypes.STRING
 }, {
   tableName: 'product',
   timestamps: false

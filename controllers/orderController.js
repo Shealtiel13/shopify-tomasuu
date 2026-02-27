@@ -2,7 +2,7 @@ const CustomerOrder = require('../models/customerorder');
 const Customer = require('../models/Customer');
 const Product = require('../models/product');
 
-CustomerOrder.belongsTo(Product, { foreignKey: 'product_id' });
+CustomerOrder.belongsTo(Product, { foreignKey: 'product_id', onDelete: 'CASCADE' });
 
 exports.getAll = async (req, res) => {
   try {
@@ -19,7 +19,7 @@ exports.getMyOrders = async (req, res) => {
     if (!customer) return res.status(404).json({ error: 'Customer profile not found' });
     const orders = await CustomerOrder.findAll({
       where: { customer_id: customer.customer_id },
-      include: [{ model: Product, attributes: ['product_name', 'category', 'price'] }],
+      include: [{ model: Product, attributes: ['product_name', 'category', 'price', 'image_url'] }],
       order: [['order_id', 'DESC']],
     });
     res.json(orders);

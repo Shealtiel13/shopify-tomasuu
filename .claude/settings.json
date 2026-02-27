@@ -1,0 +1,42 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": {
+          "tool": ["Write", "Edit"],
+          "filePattern": "client/**/*.jsx"
+        },
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/devteam/Desktop/project/backend-practice/API-activity && npx eslint --no-error-on-unmatched-pattern \"$CLAUDE_FILE_PATH\" 2>/dev/null || echo 'ESLint: check file for issues'"
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "tool": ["Write", "Edit"],
+          "filePattern": "{controllers,routes,middleware,models,config}/**/*.js"
+        },
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --check \"$CLAUDE_FILE_PATH\" 2>&1 && echo 'Syntax OK' || echo 'Syntax error detected!'"
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "tool": "Bash",
+          "commandPattern": "npm"
+        },
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Reminder: If client/ files changed, rebuild frontend with: cd client && npm run build'"
+          }
+        ]
+      }
+    ]
+  }
+}

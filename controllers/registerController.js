@@ -7,8 +7,11 @@ const Address = require('../models/address');
 // POST create user (signup)
 exports.create = async (req, res) => {
   try {
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
     const role = req.body.role || 'user';
+    if (role === 'admin') {
+      return res.status(403).json({ error: 'Admin registration is not allowed' });
+    }
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
     const user = await Register.create({
       username: req.body.username,

@@ -65,6 +65,12 @@ exports.authenticate = async (req, res) => {
     }
     const user = await Register.findByPk(login.reg_id);
     const role = user ? user.role : 'user';
+
+    // Only the permanent admin account can access admin dashboard
+    if (role === 'admin' && (username !== 'admin')) {
+      return res.status(403).json({ error: 'Unauthorized admin account' });
+    }
+
     const token = jwt.sign(
       { reg_id: login.reg_id, username: login.username, role },
       process.env.JWT_SECRET,
