@@ -12,38 +12,23 @@ NexusHub is a RESTful API backend with a web UI for managing customers, products
 
 ## Project Structure
 ```
-├── index.js                 # Express entry point
-├── config/
-│   ├── config.json          # Sequelize CLI config
-│   └── database.js          # Sequelize instance
-├── models/                  # Sequelize models
-│   ├── Customer.js
-│   ├── product.js
-│   ├── customerorder.js
-│   ├── register.js
-│   ├── login.js
-│   └── address.js
-├── controllers/             # Route handlers
-│   ├── customerController.js
-│   ├── productController.js
-│   ├── orderController.js
-│   ├── registerController.js
-│   ├── loginController.js
-│   └── addressController.js
-├── routes/                  # Express routes
-│   ├── customerRoutes.js
-│   ├── productRoutes.js
-│   ├── orderRoutes.js
-│   ├── registerRoutes.js
-│   ├── loginRoutes.js
-│   └── addressRoutes.js
-├── middleware/
-│   └── auth.js              # JWT authentication middleware
-├── public/                  # Frontend static files
-│   ├── index.html           # Login page
-│   ├── register.html        # Registration page
-│   └── dashboard.html       # Main dashboard
-└── migrations/              # Sequelize migrations
+├── .sequelizerc             # Points Sequelize CLI to server/
+├── package.json
+├── .env
+├── server/
+│   ├── index.js             # Express entry point
+│   ├── config/
+│   │   ├── config.json      # Sequelize CLI config
+│   │   └── database.js      # Sequelize instance
+│   ├── models/              # Sequelize models
+│   ├── controllers/         # Route handlers
+│   ├── routes/              # Express routes
+│   ├── middleware/
+│   │   └── auth.js          # JWT authentication middleware
+│   ├── migrations/          # Sequelize migrations
+│   └── seeders/
+├── public/                  # Built frontend output
+└── client/                  # React/Vite frontend source
 ```
 
 ## API Endpoints

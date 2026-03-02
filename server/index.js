@@ -10,7 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.use('/api/customers', require('./routes/customerRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
@@ -21,7 +21,7 @@ app.use('/api/addresses', require('./routes/addressRoutes'));
 app.use('/api/ai', require('./routes/aiAssistantRoutes'));
 
 app.get(/^\/(?!api).*/, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
 app.listen(PORT, async () => {

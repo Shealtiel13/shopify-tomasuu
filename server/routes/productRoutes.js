@@ -6,7 +6,7 @@ const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
 
 const storage = multer.diskStorage({
-  destination: path.join(__dirname, '..', 'public', 'images', 'products'),
+  destination: path.join(__dirname, '..', '..', 'public', 'images', 'products'),
   filename: (req, file, cb) => {
     const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1e9) + path.extname(file.originalname);
     cb(null, uniqueName);
