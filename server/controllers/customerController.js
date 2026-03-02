@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const Customer = require('../models/Customer');
+const Customer = require('../models/customer');
 const Register = require('../models/register');
 const Login = require('../models/login');
 const Address = require('../models/address');

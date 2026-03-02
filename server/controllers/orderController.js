@@ -1,5 +1,5 @@
 const CustomerOrder = require('../models/customerorder');
-const Customer = require('../models/Customer');
+const Customer = require('../models/customer');
 const Product = require('../models/product');
 
 CustomerOrder.belongsTo(Product, { foreignKey: 'product_id', onDelete: 'CASCADE' });

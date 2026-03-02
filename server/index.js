@@ -3,7 +3,7 @@ require('dotenv').config();
 
 const path = require('path');
 const { Op } = require('sequelize');
-const Customer = require('./models/Customer');
+const Customer = require('./models/customer');
 const Address = require('./models/address');
 
 const app = express();

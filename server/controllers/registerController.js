@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const Register = require('../models/register');
-const Customer = require('../models/Customer');
+const Customer = require('../models/customer');
 const Login = require('../models/login');
 const Address = require('../models/address');
 
