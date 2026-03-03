@@ -27,7 +27,7 @@ export default function Login() {
         return
       }
 
-      dispatch(setCredentials({ token: data.token, username, role: data.role }))
+      dispatch(setCredentials({ token: data.token, username, role: data.role, firstName: data.first_name }))
       navigate(data.role === 'admin' ? '/admin' : '/dashboard')
     } catch {
       setError('Something went wrong. Please try again.')
@@ -39,11 +39,11 @@ export default function Login() {
       <div className="w-full max-w-md px-4">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Nexus<span className="text-blue-500">Hub</span></h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Shop smarter. Live better.</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Your go-to source for PC parts and components.</p>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8">
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Login</h2>
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Sign in to your account</h2>
 
           {error && (
             <div className="bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded mb-4">{error}</div>

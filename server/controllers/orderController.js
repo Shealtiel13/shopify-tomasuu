@@ -1,6 +1,13 @@
+const crypto = require('crypto');
 const CustomerOrder = require('../models/customerorder');
 const Customer = require('../models/customer');
 const Product = require('../models/product');
+
+function generateOrderNumber() {
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const hex = crypto.randomBytes(3).toString('hex').toUpperCase();
+  return 'ORN-' + date + '-' + hex;
+}
 
 CustomerOrder.belongsTo(Product, { foreignKey: 'product_id', onDelete: 'CASCADE' });
 
@@ -45,6 +52,7 @@ exports.create = async (req, res) => {
     console.log('Order create - customer found:', customer ? customer.customer_id : 'NOT FOUND');
     if (!customer) return res.status(404).json({ error: 'Customer profile not found' });
     const order = await CustomerOrder.create({
+      order_number: generateOrderNumber(),
       product_id: req.body.product_id,
       order_date: req.body.order_date,
       total_amount: req.body.total_amount,

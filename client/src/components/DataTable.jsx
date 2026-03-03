@@ -9,7 +9,7 @@ export default function DataTable({ columns, data, onEdit, onDelete, emptyMessag
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden overflow-x-auto">
-      <table className="w-full">
+      <table className="w-full min-w-[600px]">
         <thead className="bg-gray-100 dark:bg-gray-700">
           <tr>
             {columns.map(col => (

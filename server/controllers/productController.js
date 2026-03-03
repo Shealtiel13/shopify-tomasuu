@@ -23,7 +23,7 @@ exports.create = async (req, res) => {
   try {
     const data = { ...req.body };
     if (req.file) {
-      data.image_url = '/images/products/' + req.file.filename;
+      data.image_url = '/uploads/products/' + req.file.filename;
     }
     const product = await Product.create(data);
     res.status(201).json(product);
@@ -38,7 +38,7 @@ exports.update = async (req, res) => {
     if (!product) return res.status(404).json({ error: 'Product not found' });
     const data = { ...req.body };
     if (req.file) {
-      data.image_url = '/images/products/' + req.file.filename;
+      data.image_url = '/uploads/products/' + req.file.filename;
     }
     await product.update(data);
     res.json(product);

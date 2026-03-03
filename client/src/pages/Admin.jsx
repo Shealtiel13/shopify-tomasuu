@@ -60,7 +60,8 @@ const sections = [
     endpoint: '/api/orders',
     idKey: 'order_id',
     columns: [
-      { key: 'order_id', label: 'Order ID' },
+      { key: 'order_id', label: 'ID' },
+      { key: 'order_number', label: 'Reference No.', bold: true },
       { key: 'customer_id', label: 'Customer ID' },
       { key: 'product_id', label: 'Product ID' },
       { key: 'order_date', label: 'Order Date' },
@@ -75,11 +76,27 @@ const sections = [
   },
 ]
 
+const categoryColors = {
+  GPU: 'bg-green-500/20 text-green-400',
+  CPU: 'bg-blue-500/20 text-blue-400',
+  RAM: 'bg-purple-500/20 text-purple-400',
+  Storage: 'bg-orange-500/20 text-orange-400',
+  Motherboard: 'bg-red-500/20 text-red-400',
+  PSU: 'bg-yellow-500/20 text-yellow-400',
+  Case: 'bg-cyan-500/20 text-cyan-400',
+  Cooling: 'bg-teal-500/20 text-teal-400',
+  Peripherals: 'bg-pink-500/20 text-pink-400',
+  Monitor: 'bg-indigo-500/20 text-indigo-400',
+  Keyboard: 'bg-amber-500/20 text-amber-400',
+  Mouse: 'bg-lime-500/20 text-lime-400',
+}
+
 export default function Admin() {
   const [data, setData] = useState({ customers: [], products: [], orders: [] })
   const [modal, setModal] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [productCategory, setProductCategory] = useState(null)
   const settingsRef = useRef(null)
   const navigate = useNavigate()
   const dispatch = useDispatch()
@@ -221,8 +238,8 @@ export default function Admin() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Nexus<span className="text-blue-500">Hub</span></h1>
             <span className="bg-purple-600 text-white text-xs font-semibold px-2.5 py-1 rounded">ADMIN</span>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-gray-600 dark:text-gray-400">Welcome, <span className="text-gray-900 dark:text-white font-medium">{username || 'Admin'}</span></span>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <span className="hidden sm:inline text-gray-600 dark:text-gray-400">Welcome, <span className="text-gray-900 dark:text-white font-medium">{username || 'Admin'}</span></span>
             <div className="relative" ref={settingsRef}>
               <button
                 onClick={() => setShowSettings(!showSettings)}
@@ -276,7 +293,7 @@ export default function Admin() {
         )}
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
             <p className="text-gray-600 dark:text-gray-400 text-sm">Total Customers</p>
             <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.customers.length}</p>
@@ -292,24 +309,58 @@ export default function Admin() {
         </div>
 
         {/* All Tables */}
-        {sections.map(section => (
-          <div key={section.key}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{section.label}</h2>
-              {section.canAdd && (
-                <button onClick={() => handleAdd(section)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition cursor-pointer">
-                  + Add {section.label.slice(0, -1)}
-                </button>
+        {sections.map(section => {
+          const isProducts = section.key === 'products'
+          const tableData = isProducts && productCategory
+            ? data.products.filter(p => p.category === productCategory)
+            : data[section.key]
+
+          return (
+            <div key={section.key}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{section.label}</h2>
+                {section.canAdd && (
+                  <button onClick={() => handleAdd(section)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition cursor-pointer">
+                    + Add {section.label.slice(0, -1)}
+                  </button>
+                )}
+              </div>
+              {isProducts && (
+                <div className="flex gap-2 overflow-x-auto py-1 px-1 mb-4 scrollbar-hide">
+                  <button
+                    onClick={() => setProductCategory(null)}
+                    className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer ${
+                      !productCategory ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    All ({data.products.length})
+                  </button>
+                  {Object.entries(categoryColors).map(([cat, colors]) => {
+                    const count = data.products.filter(p => p.category === cat).length
+                    if (count === 0) return null
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => setProductCategory(cat)}
+                        className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer ${
+                          productCategory === cat ? 'ring-2 ring-offset-1 ring-blue-500 dark:ring-offset-gray-900 ' + colors : colors
+                        }`}
+                      >
+                        {cat} ({count})
+                      </button>
+                    )
+                  })}
+                </div>
               )}
+              <DataTable
+                columns={section.columns}
+                data={tableData}
+                onEdit={(row) => handleEdit(section, row)}
+                onDelete={(row) => handleDelete(section, row)}
+              />
             </div>
-            <DataTable
-              columns={section.columns}
-              data={data[section.key]}
-              onEdit={(row) => handleEdit(section, row)}
-              onDelete={(row) => handleDelete(section, row)}
-            />
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Edit/Add Modal */}
