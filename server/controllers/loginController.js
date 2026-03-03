@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Login = require('../models/login');
 const Register = require('../models/register');
+const Customer = require('../models/customer');
 
 // GET all logins
 exports.getAll = async (req, res) => {
@@ -76,7 +77,9 @@ exports.authenticate = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
-    res.json({ message: 'Login successful', token, role });
+    const customer = await Customer.findOne({ where: { reg_id: login.reg_id } });
+    const first_name = customer ? customer.first_name : username;
+    res.json({ message: 'Login successful', token, role, first_name });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

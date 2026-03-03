@@ -8,17 +8,18 @@ import { showNotification } from '../store/notificationSlice'
 import { toggleDarkMode } from '../store/themeSlice'
 
 export default function Dashboard() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [cancelConfirm, setCancelConfirm] = useState(null)
   const [buyConfirm, setBuyConfirm] = useState(null)
   const [buyQty, setBuyQty] = useState(1)
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || null)
   const dropdownRef = useRef(null)
   const navigate = useNavigate()
   const dispatch = useDispatch()
 
-  const { username } = useSelector((state) => state.auth)
+  const { username, firstName } = useSelector((state) => state.auth)
   const { items: products } = useSelector((state) => state.products)
   const { items: orders } = useSelector((state) => state.orders)
   const notification = useSelector((state) => state.notification)
@@ -35,9 +36,16 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => {
-    if (activeTab === 'products') dispatch(fetchProducts())
+    if (!activeTab || activeTab === 'products') dispatch(fetchProducts())
     if (activeTab === 'orders') dispatch(fetchMyOrders())
   }, [activeTab, dispatch])
+
+  useEffect(() => {
+    const params = {}
+    if (activeTab) params.tab = activeTab
+    if (selectedCategory) params.category = selectedCategory
+    setSearchParams(params, { replace: true })
+  }, [activeTab, selectedCategory])
 
   const handleTabChange = (tab) => {
     setActiveTab(tab)
@@ -56,7 +64,7 @@ export default function Dashboard() {
       total_amount: Number(buyConfirm.price) * buyQty,
     }))
     if (placeOrder.fulfilled.match(result)) {
-      dispatch(showNotification('Order placed for ' + buyQty + 'x ' + buyConfirm.product_name))
+      dispatch(showNotification('Solid choice! ' + buyQty + 'x ' + buyConfirm.product_name + ' added to your orders'))
       setBuyConfirm(null)
       setActiveTab('orders')
     } else {
@@ -73,7 +81,7 @@ export default function Dashboard() {
     if (!cancelConfirm) return
     const result = await dispatch(cancelOrder(cancelConfirm.order_id))
     if (cancelOrder.fulfilled.match(result)) {
-      dispatch(showNotification('Order cancelled'))
+      dispatch(showNotification('Order has been cancelled successfully'))
     } else {
       dispatch(showNotification('Failed to cancel order', 'error'))
     }
@@ -86,10 +94,27 @@ export default function Dashboard() {
   }
 
   const categoryColors = {
-    Electronics: 'bg-blue-500/20 text-blue-400',
-    Clothing: 'bg-pink-500/20 text-pink-400',
-    Food: 'bg-green-500/20 text-green-400',
-    Books: 'bg-yellow-500/20 text-yellow-400',
+    GPU: 'bg-green-500/20 text-green-400',
+    CPU: 'bg-blue-500/20 text-blue-400',
+    RAM: 'bg-purple-500/20 text-purple-400',
+    Storage: 'bg-orange-500/20 text-orange-400',
+    Motherboard: 'bg-red-500/20 text-red-400',
+    PSU: 'bg-yellow-500/20 text-yellow-400',
+    Case: 'bg-cyan-500/20 text-cyan-400',
+    Cooling: 'bg-teal-500/20 text-teal-400',
+    Peripherals: 'bg-pink-500/20 text-pink-400',
+    Monitor: 'bg-indigo-500/20 text-indigo-400',
+    Keyboard: 'bg-amber-500/20 text-amber-400',
+    Mouse: 'bg-lime-500/20 text-lime-400',
+  }
+
+  const filteredProducts = selectedCategory
+    ? products.filter(p => p.category === selectedCategory)
+    : products
+
+  const handleCategoryClick = (category) => {
+    setSelectedCategory(category)
+    setActiveTab('products')
   }
 
   return (
@@ -112,7 +137,7 @@ export default function Dashboard() {
                 <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
                   {(username || 'U').charAt(0).toUpperCase()}
                 </div>
-                <span className="font-medium">{username || 'User'}</span>
+                <span className="font-medium hidden sm:inline">{username || 'User'}</span>
                 <svg className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -185,37 +210,143 @@ export default function Dashboard() {
 
         {/* Landing page */}
         {!activeTab && (
-          <div className="flex flex-col items-center justify-center py-32">
-            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Welcome back, <span className="text-blue-500">{username || 'User'}</span>
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 text-lg mb-10 text-center max-w-md">
-              Browse products and track your orders from one place.
-            </p>
-            <div className="grid grid-cols-2 gap-6 w-full max-w-lg">
+          <div className="space-y-8">
+            {/* Hero Banner */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 p-8 sm:p-12">
+              <div className="relative z-10 max-w-xl">
+                <p className="text-blue-200 text-sm font-medium mb-2">Welcome back, {firstName || username || 'User'}</p>
+                <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Build Your Dream Rig</h2>
+                <p className="text-blue-100 text-base sm:text-lg mb-6">Shop the latest GPUs, CPUs, motherboards and more — all at the best prices.</p>
+                <button
+                  onClick={() => setActiveTab('products')}
+                  className="bg-white text-blue-700 font-semibold px-6 py-3 rounded-lg hover:bg-blue-50 transition cursor-pointer text-sm"
+                >
+                  Shop Now
+                </button>
+              </div>
+              {/* Decorative SVG */}
+              <svg className="absolute right-0 top-0 h-full w-1/2 text-white/5 hidden sm:block" viewBox="0 0 200 200" fill="currentColor">
+                <rect x="60" y="20" width="80" height="80" rx="8" />
+                <rect x="70" y="30" width="60" height="60" rx="4" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.5" />
+                <circle cx="100" cy="60" r="15" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.5" />
+                <rect x="40" y="110" width="120" height="10" rx="2" />
+                <rect x="50" y="125" width="100" height="10" rx="2" />
+                <rect x="45" y="140" width="30" height="30" rx="4" />
+                <rect x="85" y="140" width="30" height="30" rx="4" />
+                <rect x="125" y="140" width="30" height="30" rx="4" />
+                <rect x="55" y="175" width="90" height="6" rx="2" />
+              </svg>
+            </div>
+
+            {/* Category Pills */}
+            <div>
+              <h3 className="text-gray-900 dark:text-white font-semibold text-lg mb-3">Browse Categories</h3>
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                {Object.entries(categoryColors).map(([cat, colors]) => (
+                  <button
+                    key={cat}
+                    onClick={() => handleCategoryClick(cat)}
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition cursor-pointer hover:scale-105 ${colors}`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Featured Products */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-900 dark:text-white font-semibold text-lg">Featured Products</h3>
+                <button
+                  onClick={() => setActiveTab('products')}
+                  className="text-blue-500 hover:text-blue-400 text-sm font-medium transition cursor-pointer"
+                >
+                  View All
+                </button>
+              </div>
+              {products.length === 0 ? (
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center">
+                  <p className="text-gray-500 text-sm">New products coming soon — check back later!</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                  {products.slice(0, 4).map(product => (
+                    <div key={product.product_id} onClick={() => navigate('/product/' + product.product_id)} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:border-gray-400 dark:hover:border-gray-600 transition group cursor-pointer">
+                      <div className="h-48 bg-gradient-to-br from-gray-200 dark:from-gray-700 to-gray-300 dark:to-gray-800 flex items-center justify-center overflow-hidden">
+                        {product.image_url ? (
+                          <img src={product.image_url} alt={product.product_name} className="h-full w-full object-contain p-2" />
+                        ) : (
+                          <svg className="w-16 h-16 text-gray-400 dark:text-gray-600 group-hover:text-gray-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="p-4">
+                        {product.category && (
+                          <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full mb-2 ${
+                            categoryColors[product.category] || 'bg-gray-600/30 text-gray-400'
+                          }`}>
+                            {product.category}
+                          </span>
+                        )}
+                        <h3 className="text-gray-900 dark:text-white font-semibold text-base mb-1 truncate">{product.product_name}</h3>
+                        <p className="text-gray-500 text-sm mb-3 line-clamp-2 h-10">
+                          {product.description || 'No description available.'}
+                        </p>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-blue-400 text-xl font-bold">₱{Number(product.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span className={`text-xs font-medium ${product.quantity > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {product.quantity > 0 ? product.quantity + ' in stock' : 'Out of stock'}
+                          </span>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleBuy(product) }}
+                          disabled={product.quantity <= 0}
+                          className={`w-full py-2.5 rounded-lg text-sm font-semibold transition cursor-pointer ${
+                            product.quantity > 0
+                              ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                              : 'bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          {product.quantity > 0 ? 'Buy Now' : 'Sold Out'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Quick Links */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button
                 onClick={() => setActiveTab('products')}
-                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-500 rounded-xl p-8 flex flex-col items-center gap-4 transition group cursor-pointer"
+                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-500 rounded-xl p-5 flex items-center gap-4 transition group cursor-pointer"
               >
-                <div className="w-14 h-14 rounded-full bg-blue-600/20 flex items-center justify-center group-hover:bg-blue-600/30 transition">
-                  <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-12 h-12 rounded-full bg-blue-600/20 flex items-center justify-center group-hover:bg-blue-600/30 transition flex-shrink-0">
+                  <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                   </svg>
                 </div>
-                <span className="text-gray-900 dark:text-white font-semibold text-lg">Shop</span>
-                <span className="text-gray-500 text-sm">Browse & buy products</span>
+                <div className="text-left">
+                  <span className="text-gray-900 dark:text-white font-semibold text-base block">Shop Parts</span>
+                  <span className="text-gray-500 text-sm">GPUs, CPUs, RAM & more</span>
+                </div>
               </button>
               <button
                 onClick={() => setActiveTab('orders')}
-                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-500 rounded-xl p-8 flex flex-col items-center gap-4 transition group cursor-pointer"
+                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-500 rounded-xl p-5 flex items-center gap-4 transition group cursor-pointer"
               >
-                <div className="w-14 h-14 rounded-full bg-blue-600/20 flex items-center justify-center group-hover:bg-blue-600/30 transition">
-                  <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-12 h-12 rounded-full bg-blue-600/20 flex items-center justify-center group-hover:bg-blue-600/30 transition flex-shrink-0">
+                  <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
                 </div>
-                <span className="text-gray-900 dark:text-white font-semibold text-lg">My Orders</span>
-                <span className="text-gray-500 text-sm">View & track your orders</span>
+                <div className="text-left">
+                  <span className="text-gray-900 dark:text-white font-semibold text-base block">My Orders</span>
+                  <span className="text-gray-500 text-sm">Track your components</span>
+                </div>
               </button>
             </div>
           </div>
@@ -224,7 +355,7 @@ export default function Dashboard() {
         {/* Products - Shopify-style grid */}
         {activeTab === 'products' && (
           <>
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-4">
               <button
                 onClick={() => setActiveTab(null)}
                 className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition cursor-pointer"
@@ -234,19 +365,47 @@ export default function Dashboard() {
                 </svg>
               </button>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Shop</h2>
+              {selectedCategory && (
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${categoryColors[selectedCategory] || 'bg-gray-600/30 text-gray-400'}`}>
+                  {selectedCategory}
+                </span>
+              )}
             </div>
 
-            {products.length === 0 ? (
+            {/* Category filter pills */}
+            <div className="flex gap-2 overflow-x-auto py-1 px-1 mb-6 scrollbar-hide">
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition cursor-pointer ${
+                  !selectedCategory ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                All
+              </button>
+              {Object.entries(categoryColors).map(([cat, colors]) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition cursor-pointer ${
+                    selectedCategory === cat ? 'ring-2 ring-offset-1 ring-blue-500 dark:ring-offset-gray-900 ' + colors : colors + ' hover:scale-105'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {filteredProducts.length === 0 ? (
               <div className="text-center py-20">
                 <svg className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
-                <p className="text-gray-500 text-lg">No products available yet.</p>
-                <p className="text-gray-400 dark:text-gray-600 text-sm mt-1">Check back later for new arrivals!</p>
+                <p className="text-gray-500 text-lg">{selectedCategory ? 'No ' + selectedCategory + ' products found' : 'No components listed yet'}</p>
+                <p className="text-gray-400 dark:text-gray-600 text-sm mt-1">{selectedCategory ? 'Try a different category' : 'New stock is incoming — check back soon!'}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                {products.map(product => (
+                {filteredProducts.map(product => (
                   <div key={product.product_id} onClick={() => navigate('/product/' + product.product_id)} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:border-gray-400 dark:hover:border-gray-600 transition group cursor-pointer">
                     {/* Product image */}
                     <div className="h-48 bg-gradient-to-br from-gray-200 dark:from-gray-700 to-gray-300 dark:to-gray-800 flex items-center justify-center overflow-hidden">
@@ -310,7 +469,7 @@ export default function Dashboard() {
         {/* My Orders - card view */}
         {activeTab === 'orders' && (
           <>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setActiveTab(null)}
@@ -327,7 +486,7 @@ export default function Dashboard() {
               </div>
               <button
                 onClick={() => setActiveTab('products')}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition cursor-pointer flex items-center gap-2"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition cursor-pointer flex items-center gap-2 w-fit"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -342,12 +501,12 @@ export default function Dashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
                 <p className="text-gray-600 dark:text-gray-400 text-lg font-medium">No orders yet</p>
-                <p className="text-gray-400 dark:text-gray-600 text-sm mt-1 mb-6">Start shopping to see your orders here!</p>
+                <p className="text-gray-400 dark:text-gray-600 text-sm mt-1 mb-6">Your next build starts here — grab some parts!</p>
                 <button
                   onClick={() => setActiveTab('products')}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition cursor-pointer"
                 >
-                  Browse Products
+                  Start Shopping
                 </button>
               </div>
             ) : (
@@ -360,7 +519,7 @@ export default function Dashboard() {
 
                   return (
                     <div key={order.order_id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:border-gray-400 dark:hover:border-gray-600 transition">
-                      <div className="flex items-start justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                         {/* Left: product info */}
                         <div className="flex gap-4">
                           {/* Product image */}
@@ -385,21 +544,21 @@ export default function Dashboard() {
                                 {product.category}
                               </span>
                             )}
-                            <div className="flex items-center gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
                               <span className="flex items-center gap-1">
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
                                 {orderDate}
                               </span>
-                              <span className="text-gray-300 dark:text-gray-600">|</span>
-                              <span>Order #{order.order_id}</span>
+                              <span className="text-gray-300 dark:text-gray-600 hidden sm:inline">|</span>
+                              <span className="break-all">{order.order_number || 'Order #' + order.order_id}</span>
                             </div>
                           </div>
                         </div>
 
                         {/* Right: price and actions */}
-                        <div className="flex flex-col items-end gap-3">
+                        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-3">
                           <span className="text-blue-400 text-xl font-bold">
                             ₱{Number(order.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>

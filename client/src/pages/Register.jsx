@@ -30,7 +30,7 @@ export default function Register() {
         return
       }
 
-      setSuccess('Account created successfully! Redirecting to login...')
+      setSuccess('Welcome aboard! Redirecting you to sign in...')
       setTimeout(() => navigate('/login'), 2000)
     } catch {
       setError('Something went wrong. Please try again.')
@@ -44,7 +44,7 @@ export default function Register() {
       <div className="w-full max-w-lg px-4">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Nexus<span className="text-blue-500">Hub</span></h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Create your account</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Create an account and build your dream rig.</p>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 overflow-hidden">
@@ -54,7 +54,7 @@ export default function Register() {
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Register</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-gray-600 dark:text-gray-300 text-sm font-medium mb-1">First Name</label>
                 <input type="text" name="first_name" value={form.first_name} onChange={handleChange} required
@@ -73,7 +73,7 @@ export default function Register() {
                 className={inputClass} placeholder="Enter your email address" />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-gray-600 dark:text-gray-300 text-sm font-medium mb-1">Username</label>
                 <input type="text" name="username" value={form.username} onChange={handleChange} required
@@ -86,7 +86,7 @@ export default function Register() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-gray-600 dark:text-gray-300 text-sm font-medium mb-1">Phone</label>
                 <input type="text" name="phone" value={form.phone} onChange={handleChange} required
@@ -112,7 +112,7 @@ export default function Register() {
                 <input type="text" name="street_address" value={form.street_address} onChange={handleChange} required
                   className={inputClass} placeholder="Enter your street address" />
               </div>
-              <div className="grid grid-cols-2 gap-4 mt-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm font-medium mb-1">City</label>
                   <input type="text" name="city" value={form.city} onChange={handleChange} required

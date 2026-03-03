@@ -7,10 +7,16 @@ import { showNotification } from '../store/notificationSlice'
 import { logout } from '../store/authSlice'
 
 const categoryColors = {
-  Electronics: 'bg-blue-500/20 text-blue-400',
-  Clothing: 'bg-pink-500/20 text-pink-400',
-  Food: 'bg-green-500/20 text-green-400',
-  Books: 'bg-yellow-500/20 text-yellow-400',
+  GPU: 'bg-green-500/20 text-green-400',
+  CPU: 'bg-blue-500/20 text-blue-400',
+  RAM: 'bg-purple-500/20 text-purple-400',
+  Storage: 'bg-orange-500/20 text-orange-400',
+  Motherboard: 'bg-red-500/20 text-red-400',
+  PSU: 'bg-yellow-500/20 text-yellow-400',
+  Case: 'bg-cyan-500/20 text-cyan-400',
+  Cooling: 'bg-teal-500/20 text-teal-400',
+  Peripherals: 'bg-pink-500/20 text-pink-400',
+  Monitor: 'bg-indigo-500/20 text-indigo-400',
 }
 
 export default function ProductDetail() {
@@ -64,7 +70,7 @@ export default function ProductDetail() {
       <div className="bg-gray-100 dark:bg-gray-900 min-h-screen flex flex-col items-center justify-center gap-4">
         <p className="text-gray-600 dark:text-gray-400 text-lg">{error || 'Product not found'}</p>
         <button
-          onClick={() => navigate('/dashboard?tab=products')}
+          onClick={() => navigate(-1)}
           className="text-blue-400 hover:text-blue-300 text-sm font-medium cursor-pointer"
         >
           Back to Shop
@@ -79,7 +85,7 @@ export default function ProductDetail() {
       <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
           <button
-            onClick={() => navigate('/dashboard?tab=products')}
+            onClick={() => navigate(-1)}
             className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition cursor-pointer"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
