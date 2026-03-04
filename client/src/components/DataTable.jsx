@@ -1,4 +1,4 @@
-export default function DataTable({ columns, data, onEdit, onDelete, emptyMessage = 'No data found' }) {
+export default function DataTable({ columns, data, onEdit, onDelete, onView, emptyMessage = 'No data found' }) {
   if (data.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center text-gray-500">
@@ -28,6 +28,16 @@ export default function DataTable({ columns, data, onEdit, onDelete, emptyMessag
               ))}
               <td className="px-4 py-3">
                 <div className="flex gap-2">
+                  {onView && (
+                    <button onClick={() => onView(row)}
+                      className="inline-flex items-center gap-1.5 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 hover:border-emerald-600 px-3 py-1.5 rounded-lg text-sm font-medium transition cursor-pointer">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                      </svg>
+                      View
+                    </button>
+                  )}
                   <button onClick={() => onEdit(row)}
                     className="inline-flex items-center gap-1.5 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 hover:border-blue-600 px-3 py-1.5 rounded-lg text-sm font-medium transition cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">

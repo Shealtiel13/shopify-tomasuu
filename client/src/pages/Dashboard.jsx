@@ -6,6 +6,7 @@ import { fetchProducts } from '../store/productSlice'
 import { fetchMyOrders, placeOrder, cancelOrder } from '../store/orderSlice'
 import { showNotification } from '../store/notificationSlice'
 import { toggleDarkMode } from '../store/themeSlice'
+import { fetchProfile, updateProfile, updateAddress, changePassword } from '../store/profileSlice'
 
 export default function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -24,6 +25,14 @@ export default function Dashboard() {
   const { items: orders } = useSelector((state) => state.orders)
   const notification = useSelector((state) => state.notification)
   const { darkMode } = useSelector((state) => state.theme)
+  const { data: profileData, loading: profileLoading } = useSelector((state) => state.profile)
+
+  const [profileForm, setProfileForm] = useState({ email: '', first_name: '', last_name: '', phone: '', age: '', birth_date: '' })
+  const [addressForm, setAddressForm] = useState({ city: '', postal_code: '', street_address: '' })
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [addressSaving, setAddressSaving] = useState(false)
+  const [passwordSaving, setPasswordSaving] = useState(false)
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -38,7 +47,28 @@ export default function Dashboard() {
   useEffect(() => {
     if (!activeTab || activeTab === 'products') dispatch(fetchProducts())
     if (activeTab === 'orders') dispatch(fetchMyOrders())
+    if (activeTab === 'settings') dispatch(fetchProfile())
   }, [activeTab, dispatch])
+
+  useEffect(() => {
+    if (profileData) {
+      setProfileForm({
+        email: profileData.email || '',
+        first_name: profileData.first_name || '',
+        last_name: profileData.last_name || '',
+        phone: profileData.phone || '',
+        age: profileData.age || '',
+        birth_date: profileData.birth_date || '',
+      })
+      if (profileData.address) {
+        setAddressForm({
+          city: profileData.address.city || '',
+          postal_code: profileData.address.postal_code || '',
+          street_address: profileData.address.street_address || '',
+        })
+      }
+    }
+  }, [profileData])
 
   useEffect(() => {
     const params = {}
@@ -46,6 +76,63 @@ export default function Dashboard() {
     if (selectedCategory) params.category = selectedCategory
     setSearchParams(params, { replace: true })
   }, [activeTab, selectedCategory])
+
+  const handleProfileSave = async () => {
+    setProfileSaving(true)
+    try {
+      await dispatch(updateProfile(profileForm)).unwrap()
+      dispatch(showNotification('Profile updated successfully'))
+    } catch (err) {
+      dispatch(showNotification(err.message || 'Failed to update profile', 'error'))
+    } finally {
+      setProfileSaving(false)
+    }
+  }
+
+  const handleAddressSave = async () => {
+    setAddressSaving(true)
+    try {
+      await dispatch(updateAddress(addressForm)).unwrap()
+      dispatch(showNotification('Address updated successfully'))
+    } catch (err) {
+      dispatch(showNotification(err.message || 'Failed to update address', 'error'))
+    } finally {
+      setAddressSaving(false)
+    }
+  }
+
+  const passwordErrors = (() => {
+    const errs = []
+    const pw = passwordForm.newPassword
+    if (pw && pw.length < 8) errs.push('At least 8 characters')
+    if (pw && !/[A-Z]/.test(pw)) errs.push('One uppercase letter')
+    if (pw && !/[a-z]/.test(pw)) errs.push('One lowercase letter')
+    if (pw && !/[0-9]/.test(pw)) errs.push('One number')
+    return errs
+  })()
+
+  const passwordsMatch = passwordForm.newPassword === passwordForm.confirmPassword
+
+  const handlePasswordChange = async () => {
+    if (passwordErrors.length > 0) {
+      dispatch(showNotification('Password does not meet requirements', 'error'))
+      return
+    }
+    if (!passwordsMatch) {
+      dispatch(showNotification('New passwords do not match', 'error'))
+      return
+    }
+    setPasswordSaving(true)
+    try {
+      await dispatch(changePassword({ currentPassword: passwordForm.currentPassword, newPassword: passwordForm.newPassword })).unwrap()
+      dispatch(showNotification('Password changed successfully'))
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    } catch (err) {
+      dispatch(showNotification(err.message || 'Failed to change password', 'error'))
+    } finally {
+      setPasswordSaving(false)
+    }
+  }
 
   const handleTabChange = (tab) => {
     setActiveTab(tab)
@@ -584,10 +671,10 @@ export default function Dashboard() {
         {/* Settings */}
         {activeTab === 'settings' && (
           <>
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-8">
               <button
                 onClick={() => setActiveTab(null)}
-                className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition cursor-pointer"
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -596,27 +683,300 @@ export default function Dashboard() {
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Settings</h2>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 max-w-lg">
-              <h3 className="text-gray-900 dark:text-white font-semibold text-lg mb-4">Appearance</h3>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-900 dark:text-white font-medium">Dark Mode</p>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">Toggle between light and dark theme</p>
-                </div>
-                <button
-                  onClick={() => dispatch(toggleDarkMode())}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition cursor-pointer ${
-                    darkMode ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                      darkMode ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+            {profileLoading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <div className="w-10 h-10 border-[3px] border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                <p className="text-sm text-gray-400">Loading profile...</p>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-6 max-w-2xl">
+                {/* Profile Header Card */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-2xl p-6">
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                  <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+                  <div className="relative flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-xl font-bold ring-2 ring-white/30 shrink-0">
+                      {(profileForm.first_name?.[0] || username?.[0] || '?').toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold text-lg">
+                        {profileForm.first_name && profileForm.last_name
+                          ? `${profileForm.first_name} ${profileForm.last_name}`
+                          : username || 'User'}
+                      </h3>
+                      <p className="text-blue-200 text-sm">{profileForm.email || 'No email set'}</p>
+                      <p className="text-blue-300/70 text-xs mt-0.5">@{username}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Personal Information */}
+                <div className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/50 rounded-2xl p-6 backdrop-blur-sm">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-9 h-9 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center">
+                      <svg className="w-4.5 h-4.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-gray-900 dark:text-white font-semibold">Personal Information</h3>
+                      <p className="text-gray-400 text-xs">Update your personal details</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {[
+                      { key: 'first_name', label: 'First Name', type: 'text', icon: null },
+                      { key: 'last_name', label: 'Last Name', type: 'text', icon: null },
+                      { key: 'email', label: 'Email', type: 'email', icon: null },
+                      { key: 'phone', label: 'Phone', type: 'text', icon: null },
+                      { key: 'age', label: 'Age', type: 'number', icon: null, readOnly: true },
+                      { key: 'birth_date', label: 'Birth Date', type: 'date', icon: null, readOnly: true },
+                    ].map(({ key, label, type, readOnly }) => (
+                      <div key={key} className="group">
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">{label}</label>
+                        <input
+                          type={type}
+                          value={profileForm[key]}
+                          onChange={(e) => !readOnly && setProfileForm({ ...profileForm, [key]: e.target.value })}
+                          readOnly={readOnly}
+                          className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all ${
+                            readOnly
+                              ? 'border-gray-100 dark:border-gray-700/30 bg-gray-100 dark:bg-gray-900/30 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                              : 'border-gray-200 dark:border-gray-600/50 bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-900'
+                          }`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end mt-5 pt-4 border-t border-gray-100 dark:border-gray-700/50">
+                    <button
+                      onClick={handleProfileSave}
+                      disabled={profileSaving}
+                      className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-all shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 cursor-pointer flex items-center gap-2"
+                    >
+                      {profileSaving ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Save Changes
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Address */}
+                <div className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/50 rounded-2xl p-6 backdrop-blur-sm">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center">
+                      <svg className="w-4.5 h-4.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-gray-900 dark:text-white font-semibold">Address</h3>
+                      <p className="text-gray-400 text-xs">Manage your shipping address</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {[
+                      { key: 'city', label: 'City' },
+                      { key: 'postal_code', label: 'Postal Code' },
+                      { key: 'street_address', label: 'Street Address' },
+                    ].map(({ key, label }) => (
+                      <div key={key} className={key === 'street_address' ? 'sm:col-span-2' : ''}>
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">{label}</label>
+                        <input
+                          type="text"
+                          value={addressForm[key]}
+                          onChange={(e) => setAddressForm({ ...addressForm, [key]: e.target.value })}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600/50 bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 focus:bg-white dark:focus:bg-gray-900 outline-none transition-all"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end mt-5 pt-4 border-t border-gray-100 dark:border-gray-700/50">
+                    <button
+                      onClick={handleAddressSave}
+                      disabled={addressSaving}
+                      className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-all shadow-sm shadow-emerald-500/20 hover:shadow-md hover:shadow-emerald-500/30 cursor-pointer flex items-center gap-2"
+                    >
+                      {addressSaving ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Save Address
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Change Password */}
+                <div className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/50 rounded-2xl p-6 backdrop-blur-sm">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center">
+                      <svg className="w-4.5 h-4.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-gray-900 dark:text-white font-semibold">Change Password</h3>
+                      <p className="text-gray-400 text-xs">Keep your account secure</p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    {[
+                      { key: 'currentPassword', label: 'Current Password' },
+                      { key: 'newPassword', label: 'New Password' },
+                      { key: 'confirmPassword', label: 'Confirm New Password' },
+                    ].map(({ key, label }) => (
+                      <div key={key}>
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">{label}</label>
+                        <input
+                          type="password"
+                          value={passwordForm[key]}
+                          onChange={(e) => setPasswordForm({ ...passwordForm, [key]: e.target.value })}
+                          className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:bg-white dark:focus:bg-gray-900 ${
+                            key === 'confirmPassword' && passwordForm.confirmPassword && !passwordsMatch
+                              ? 'border-red-400 dark:border-red-500/50 focus:ring-2 focus:ring-red-500/40 focus:border-red-500'
+                              : key === 'confirmPassword' && passwordForm.confirmPassword && passwordsMatch
+                                ? 'border-green-400 dark:border-green-500/50 focus:ring-2 focus:ring-green-500/40 focus:border-green-500'
+                                : key === 'newPassword' && passwordForm.newPassword && passwordErrors.length > 0
+                                  ? 'border-red-400 dark:border-red-500/50 focus:ring-2 focus:ring-red-500/40 focus:border-red-500'
+                                  : key === 'newPassword' && passwordForm.newPassword && passwordErrors.length === 0
+                                    ? 'border-green-400 dark:border-green-500/50 focus:ring-2 focus:ring-green-500/40 focus:border-green-500'
+                                    : 'border-gray-200 dark:border-gray-600/50 focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500'
+                          }`}
+                        />
+                        {key === 'newPassword' && passwordForm.newPassword && (
+                          <div className="mt-2 space-y-1">
+                            {[
+                              { test: passwordForm.newPassword.length >= 8, text: 'At least 8 characters' },
+                              { test: /[A-Z]/.test(passwordForm.newPassword), text: 'One uppercase letter' },
+                              { test: /[a-z]/.test(passwordForm.newPassword), text: 'One lowercase letter' },
+                              { test: /[0-9]/.test(passwordForm.newPassword), text: 'One number' },
+                            ].map(({ test, text }) => (
+                              <div key={text} className="flex items-center gap-1.5">
+                                {test ? (
+                                  <svg className="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                )}
+                                <span className={`text-xs ${test ? 'text-green-500' : 'text-red-400'}`}>{text}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {key === 'confirmPassword' && passwordForm.confirmPassword && (
+                          <div className="flex items-center gap-1.5 mt-2">
+                            {passwordsMatch ? (
+                              <>
+                                <svg className="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span className="text-xs text-green-500">Passwords match</span>
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                <span className="text-xs text-red-400">Passwords do not match</span>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end mt-5 pt-4 border-t border-gray-100 dark:border-gray-700/50">
+                    <button
+                      onClick={handlePasswordChange}
+                      disabled={passwordSaving}
+                      className="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-all shadow-sm shadow-amber-500/20 hover:shadow-md hover:shadow-amber-500/30 cursor-pointer flex items-center gap-2"
+                    >
+                      {passwordSaving ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Changing...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                          </svg>
+                          Change Password
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Appearance */}
+                <div className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/50 rounded-2xl p-6 backdrop-blur-sm">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-9 h-9 rounded-xl bg-violet-500/10 dark:bg-violet-500/20 flex items-center justify-center">
+                      <svg className="w-4.5 h-4.5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-gray-900 dark:text-white font-semibold">Appearance</h3>
+                      <p className="text-gray-400 text-xs">Customize how things look</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700/30">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                        {darkMode ? (
+                          <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
+                          </svg>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-gray-900 dark:text-white font-medium text-sm">Dark Mode</p>
+                        <p className="text-gray-400 text-xs">{darkMode ? 'On' : 'Off'} — Toggle between light and dark theme</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => dispatch(toggleDarkMode())}
+                      className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 cursor-pointer ${
+                        darkMode ? 'bg-violet-600' : 'bg-gray-300 dark:bg-gray-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                          darkMode ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
