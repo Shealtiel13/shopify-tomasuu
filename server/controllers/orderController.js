@@ -97,13 +97,27 @@ exports.confirmReceived = async (req, res) => {
   }
 };
 
+exports.cancel = async (req, res) => {
+  try {
+    const customer = await Customer.findOne({ where: { reg_id: req.user.reg_id } });
+    if (!customer) return res.status(404).json({ error: 'Customer profile not found' });
+    const order = await CustomerOrder.findByPk(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (order.customer_id !== customer.customer_id) return res.status(403).json({ error: 'Not your order' });
+    if (order.status !== 'Pending') return res.status(400).json({ error: 'Only Pending orders can be cancelled' });
+    await order.update({ status: 'Cancelled' });
+    res.json({ message: 'Order cancelled' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.delete = async (req, res) => {
   try {
     const order = await CustomerOrder.findByPk(req.params.id);
     if (!order) return res.status(404).json({ error: 'Order not found' });
-    if (order.status !== 'Pending') return res.status(400).json({ error: 'Only Pending orders can be cancelled' });
-    await order.update({ status: 'Cancelled' });
-    res.json({ message: 'Order cancelled' });
+    await order.destroy();
+    res.json({ message: 'Order deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

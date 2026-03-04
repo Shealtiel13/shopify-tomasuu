@@ -46,8 +46,8 @@ export const cancelOrder = createAsyncThunk(
   'orders/cancel',
   async (orderId, { getState, rejectWithValue }) => {
     const { token } = getState().auth
-    const res = await fetch('/api/orders/' + orderId, {
-      method: 'DELETE',
+    const res = await fetch('/api/orders/my/' + orderId + '/cancel', {
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + token,
