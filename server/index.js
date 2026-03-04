@@ -20,6 +20,7 @@ app.use('/api/register', require('./routes/registerRoutes'));
 app.use('/api/login', require('./routes/loginRoutes'));
 app.use('/api/addresses', require('./routes/addressRoutes'));
 app.use('/api/ai', require('./routes/aiAssistantRoutes'));
+app.use('/api/cart', require('./routes/cartRoutes'));
 
 app.get(/^\/(?!api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));

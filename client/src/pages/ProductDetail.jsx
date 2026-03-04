@@ -3,20 +3,21 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchProductById, clearCurrentProduct } from '../store/productSlice'
 import { placeOrder } from '../store/orderSlice'
+import { addToCart } from '../store/cartSlice'
 import { showNotification } from '../store/notificationSlice'
 import { logout } from '../store/authSlice'
 
 const categoryColors = {
-  GPU: 'bg-green-500/20 text-green-400',
-  CPU: 'bg-blue-500/20 text-blue-400',
-  RAM: 'bg-purple-500/20 text-purple-400',
-  Storage: 'bg-orange-500/20 text-orange-400',
-  Motherboard: 'bg-red-500/20 text-red-400',
-  PSU: 'bg-yellow-500/20 text-yellow-400',
-  Case: 'bg-cyan-500/20 text-cyan-400',
-  Cooling: 'bg-teal-500/20 text-teal-400',
-  Peripherals: 'bg-pink-500/20 text-pink-400',
-  Monitor: 'bg-indigo-500/20 text-indigo-400',
+  GPU: 'bg-blue-500/15 text-blue-400',
+  CPU: 'bg-blue-500/15 text-blue-400',
+  RAM: 'bg-blue-500/15 text-blue-400',
+  Storage: 'bg-blue-500/15 text-blue-400',
+  Motherboard: 'bg-blue-500/15 text-blue-400',
+  PSU: 'bg-blue-500/15 text-blue-400',
+  Case: 'bg-blue-500/15 text-blue-400',
+  Cooling: 'bg-blue-500/15 text-blue-400',
+  Peripherals: 'bg-blue-500/15 text-blue-400',
+  Monitor: 'bg-blue-500/15 text-blue-400',
 }
 
 export default function ProductDetail() {
@@ -27,8 +28,6 @@ export default function ProductDetail() {
   const [buyQty, setBuyQty] = useState(1)
 
   const { currentProduct: product, loading, error } = useSelector((state) => state.products)
-  const notification = useSelector((state) => state.notification)
-
   useEffect(() => {
     dispatch(fetchProductById(id)).then((result) => {
       if (result.payload === 'unauthorized') {
@@ -102,17 +101,6 @@ export default function ProductDetail() {
       </nav>
 
       <div className="max-w-5xl mx-auto px-4 py-8">
-        {/* Notification */}
-        {notification.message && (
-          <div className={`px-4 py-3 rounded-lg mb-6 text-sm font-medium ${
-            notification.type === 'success'
-              ? 'bg-green-500/20 border border-green-500 text-green-400'
-              : 'bg-red-500/20 border border-red-500 text-red-400'
-          }`}>
-            {notification.message}
-          </div>
-        )}
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Image */}
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden flex items-center justify-center h-80 md:h-96">
@@ -152,17 +140,36 @@ export default function ProductDetail() {
               </span>
             </div>
 
-            <button
-              onClick={() => { setBuyConfirm(true); setBuyQty(1) }}
-              disabled={product.quantity <= 0}
-              className={`w-full py-3 rounded-lg text-base font-semibold transition cursor-pointer ${
-                product.quantity > 0
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              {product.quantity > 0 ? 'Buy Now' : 'Sold Out'}
-            </button>
+            {product.quantity > 0 ? (
+              <div className="flex gap-3">
+                <button
+                  onClick={async () => {
+                    const result = await dispatch(addToCart({ product_id: product.product_id, quantity: 1 }))
+                    if (addToCart.fulfilled.match(result)) {
+                      dispatch(showNotification(product.product_name + ' added to cart'))
+                    } else {
+                      dispatch(showNotification(result.payload || 'Failed to add to cart', 'error'))
+                    }
+                  }}
+                  className="flex-1 py-3 rounded-lg text-base font-semibold transition cursor-pointer bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200"
+                >
+                  Add to Cart
+                </button>
+                <button
+                  onClick={() => { setBuyConfirm(true); setBuyQty(1) }}
+                  className="flex-1 py-3 rounded-lg text-base font-semibold transition cursor-pointer bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Buy Now
+                </button>
+              </div>
+            ) : (
+              <button
+                disabled
+                className="w-full py-3 rounded-lg text-base font-semibold bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed"
+              >
+                Sold Out
+              </button>
+            )}
           </div>
         </div>
       </div>

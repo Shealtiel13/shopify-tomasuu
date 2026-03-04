@@ -66,29 +66,37 @@ const sections = [
       { key: 'product_id', label: 'Product ID' },
       { key: 'order_date', label: 'Order Date' },
       { key: 'total_amount', label: 'Total Amount' },
+      { key: 'status', label: 'Status', render: (val) => {
+        const colors = {
+          Pending: 'bg-yellow-500/15 text-yellow-400',
+          Processing: 'bg-blue-500/15 text-blue-400',
+          Shipped: 'bg-purple-500/15 text-purple-400',
+          Delivered: 'bg-orange-500/15 text-orange-400',
+          Completed: 'bg-green-500/15 text-green-400',
+          Cancelled: 'bg-red-500/15 text-red-400',
+        }
+        return <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${colors[val] || 'bg-gray-500/15 text-gray-400'}`}>{val || 'N/A'}</span>
+      }},
     ],
     fields: [
-      { key: 'customer_id', label: 'Customer ID', type: 'number' },
-      { key: 'product_id', label: 'Product ID', type: 'number' },
-      { key: 'order_date', label: 'Order Date', type: 'date' },
-      { key: 'total_amount', label: 'Total Amount', type: 'number' },
+      { key: 'status', label: 'Status', type: 'select', options: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Completed'] },
     ],
   },
 ]
 
 const categoryColors = {
-  GPU: 'bg-green-500/20 text-green-400',
-  CPU: 'bg-blue-500/20 text-blue-400',
-  RAM: 'bg-purple-500/20 text-purple-400',
-  Storage: 'bg-orange-500/20 text-orange-400',
-  Motherboard: 'bg-red-500/20 text-red-400',
-  PSU: 'bg-yellow-500/20 text-yellow-400',
-  Case: 'bg-cyan-500/20 text-cyan-400',
-  Cooling: 'bg-teal-500/20 text-teal-400',
-  Peripherals: 'bg-pink-500/20 text-pink-400',
-  Monitor: 'bg-indigo-500/20 text-indigo-400',
-  Keyboard: 'bg-amber-500/20 text-amber-400',
-  Mouse: 'bg-lime-500/20 text-lime-400',
+  GPU: 'bg-blue-500/15 text-blue-400',
+  CPU: 'bg-blue-500/15 text-blue-400',
+  RAM: 'bg-blue-500/15 text-blue-400',
+  Storage: 'bg-blue-500/15 text-blue-400',
+  Motherboard: 'bg-blue-500/15 text-blue-400',
+  PSU: 'bg-blue-500/15 text-blue-400',
+  Case: 'bg-blue-500/15 text-blue-400',
+  Cooling: 'bg-blue-500/15 text-blue-400',
+  Peripherals: 'bg-blue-500/15 text-blue-400',
+  Monitor: 'bg-blue-500/15 text-blue-400',
+  Keyboard: 'bg-blue-500/15 text-blue-400',
+  Mouse: 'bg-blue-500/15 text-blue-400',
 }
 
 export default function Admin() {
@@ -102,7 +110,6 @@ export default function Admin() {
   const dispatch = useDispatch()
 
   const { token, username, role } = useSelector((state) => state.auth)
-  const notification = useSelector((state) => state.notification)
   const { darkMode } = useSelector((state) => state.theme)
 
   useEffect(() => {
@@ -281,17 +288,6 @@ export default function Admin() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-8">
-        {/* Notification */}
-        {notification.message && (
-          <div className={`px-4 py-3 rounded-lg text-sm font-medium ${
-            notification.type === 'success'
-              ? 'bg-green-500/20 border border-green-500 text-green-400'
-              : 'bg-red-500/20 border border-red-500 text-red-400'
-          }`}>
-            {notification.message}
-          </div>
-        )}
-
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
