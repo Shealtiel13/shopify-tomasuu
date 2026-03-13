@@ -11,6 +11,16 @@ exports.create = async (req, res) => {
     if (role === 'admin') {
       return res.status(403).json({ error: 'Admin registration is not allowed' });
     }
+    if (role === 'user') {
+      if (!req.body.email) {
+        return res.status(400).json({ error: 'Email is required' });
+      }
+      const existingUser = await Register.findOne({ where: { email: req.body.email } });
+      if (existingUser) {
+        return res.status(409).json({ error: 'This email is already associated with an existing account' });
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
     const user = await Register.create({

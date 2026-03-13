@@ -70,7 +70,10 @@ export default function Login() {
             </button>
           </form>
 
-          <p className="text-gray-600 dark:text-gray-400 text-center mt-6">
+          <p className="text-center mt-4">
+            <Link to="/forgot-password" className="text-blue-500 hover:text-blue-400 text-sm font-medium">Forgot your password?</Link>
+          </p>
+          <p className="text-gray-600 dark:text-gray-400 text-center mt-3">
             Don't have an account?{' '}
             <Link to="/register" className="text-blue-500 hover:text-blue-400 font-medium">Register here</Link>
           </p>

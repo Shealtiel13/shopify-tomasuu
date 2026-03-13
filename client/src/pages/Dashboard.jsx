@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [buyConfirm, setBuyConfirm] = useState(null)
   const [buyQty, setBuyQty] = useState(1)
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || null)
+  const [visibleProducts, setVisibleProducts] = useState(8)
   const dropdownRef = useRef(null)
   const navigate = useNavigate()
   const dispatch = useDispatch()
@@ -201,6 +202,7 @@ export default function Dashboard() {
 
   const handleCategoryClick = (category) => {
     setSelectedCategory(category)
+    setVisibleProducts(8)
     setActiveTab('products')
   }
 
@@ -491,8 +493,9 @@ export default function Dashboard() {
                 <p className="text-gray-400 dark:text-gray-600 text-sm mt-1">{selectedCategory ? 'Try a different category' : 'New stock is incoming — check back soon!'}</p>
               </div>
             ) : (
+              <>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                {filteredProducts.map(product => (
+                {filteredProducts.slice(0, visibleProducts).map(product => (
                   <div key={product.product_id} onClick={() => navigate('/product/' + product.product_id)} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:border-gray-400 dark:hover:border-gray-600 transition group cursor-pointer">
                     {/* Product image */}
                     <div className="h-48 bg-gradient-to-br from-gray-200 dark:from-gray-700 to-gray-300 dark:to-gray-800 flex items-center justify-center overflow-hidden">
@@ -549,6 +552,17 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
+              {filteredProducts.length > visibleProducts && (
+                <div className="text-center mt-6">
+                  <button
+                    onClick={() => setVisibleProducts(v => v + 8)}
+                    className="px-6 py-2.5 rounded-lg text-sm font-semibold bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition cursor-pointer"
+                  >
+                    Load More ({filteredProducts.length - visibleProducts} remaining)
+                  </button>
+                </div>
+              )}
+              </>
             )}
           </>
         )}
