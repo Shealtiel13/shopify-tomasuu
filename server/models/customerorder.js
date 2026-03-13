@@ -7,7 +7,8 @@ const CustomerOrder = sequelize.define('CustomerOrder', {
   customer_id: DataTypes.INTEGER,
   product_id: DataTypes.INTEGER,
   order_date: DataTypes.DATE,
-  total_amount: DataTypes.DECIMAL
+  total_amount: DataTypes.DECIMAL,
+  status: { type: DataTypes.STRING, defaultValue: 'Pending' }
 }, {
   tableName: 'customer_order',
   timestamps: false

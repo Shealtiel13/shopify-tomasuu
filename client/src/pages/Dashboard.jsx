@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { logout } from '../store/authSlice'
 import { fetchProducts } from '../store/productSlice'
-import { fetchMyOrders, placeOrder, cancelOrder } from '../store/orderSlice'
+import { fetchMyOrders, placeOrder, cancelOrder, confirmOrder } from '../store/orderSlice'
+import { addToCart, fetchCart } from '../store/cartSlice'
 import { showNotification } from '../store/notificationSlice'
 import { toggleDarkMode } from '../store/themeSlice'
 import { fetchProfile, updateProfile, updateAddress, changePassword } from '../store/profileSlice'
@@ -13,8 +14,11 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [cancelConfirm, setCancelConfirm] = useState(null)
+  const [bulkCancelConfirm, setBulkCancelConfirm] = useState(false)
+  const [selectedOrders, setSelectedOrders] = useState([])
   const [buyConfirm, setBuyConfirm] = useState(null)
   const [buyQty, setBuyQty] = useState(1)
+  const [receiveConfirm, setReceiveConfirm] = useState(null)
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || null)
   const [visibleProducts, setVisibleProducts] = useState(8)
   const dropdownRef = useRef(null)
@@ -24,7 +28,7 @@ export default function Dashboard() {
   const { username, firstName } = useSelector((state) => state.auth)
   const { items: products } = useSelector((state) => state.products)
   const { items: orders } = useSelector((state) => state.orders)
-  const notification = useSelector((state) => state.notification)
+  const { items: cartItems } = useSelector((state) => state.cart)
   const { darkMode } = useSelector((state) => state.theme)
   const { data: profileData, loading: profileLoading } = useSelector((state) => state.profile)
 
@@ -44,6 +48,10 @@ export default function Dashboard() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    dispatch(fetchCart())
+  }, [dispatch])
 
   useEffect(() => {
     if (!activeTab || activeTab === 'products') dispatch(fetchProducts())
@@ -176,24 +184,78 @@ export default function Dashboard() {
     setCancelConfirm(null)
   }
 
+  const toggleOrderSelect = (orderId) => {
+    setSelectedOrders(prev =>
+      prev.includes(orderId) ? prev.filter(id => id !== orderId) : [...prev, orderId]
+    )
+  }
+
+  const toggleSelectAll = () => {
+    setSelectedOrders(prev =>
+      prev.length === pendingOrders.length ? [] : pendingOrders.map(o => o.order_id)
+    )
+  }
+
+  const confirmBulkCancel = async () => {
+    let cancelled = 0
+    for (const orderId of selectedOrders) {
+      const result = await dispatch(cancelOrder(orderId))
+      if (cancelOrder.fulfilled.match(result)) cancelled++
+    }
+    dispatch(showNotification(cancelled + ' order(s) cancelled successfully'))
+    setSelectedOrders([])
+    setBulkCancelConfirm(false)
+  }
+
+  const handleConfirmReceived = async () => {
+    if (!receiveConfirm) return
+    const result = await dispatch(confirmOrder(receiveConfirm.order_id))
+    if (confirmOrder.fulfilled.match(result)) {
+      dispatch(showNotification('Order marked as completed'))
+    } else {
+      dispatch(showNotification(result.payload || 'Failed to confirm order', 'error'))
+    }
+    setReceiveConfirm(null)
+  }
+
+  const statusColors = {
+    Pending: 'bg-yellow-500/15 text-yellow-400',
+    Processing: 'bg-blue-500/15 text-blue-400',
+    Shipped: 'bg-purple-500/15 text-purple-400',
+    Delivered: 'bg-orange-500/15 text-orange-400',
+    Completed: 'bg-green-500/15 text-green-400',
+    Cancelled: 'bg-red-500/15 text-red-400',
+  }
+
+  const pendingOrders = orders.filter(o => o.status === 'Pending')
+
+  const handleAddToCart = async (product) => {
+    const result = await dispatch(addToCart({ product_id: product.product_id, quantity: 1 }))
+    if (addToCart.fulfilled.match(result)) {
+      dispatch(showNotification(product.product_name + ' added to cart'))
+    } else {
+      dispatch(showNotification(result.payload || 'Failed to add to cart', 'error'))
+    }
+  }
+
   const handleLogout = () => {
     dispatch(logout())
     navigate('/login')
   }
 
   const categoryColors = {
-    GPU: 'bg-green-500/20 text-green-400',
-    CPU: 'bg-blue-500/20 text-blue-400',
-    RAM: 'bg-purple-500/20 text-purple-400',
-    Storage: 'bg-orange-500/20 text-orange-400',
-    Motherboard: 'bg-red-500/20 text-red-400',
-    PSU: 'bg-yellow-500/20 text-yellow-400',
-    Case: 'bg-cyan-500/20 text-cyan-400',
-    Cooling: 'bg-teal-500/20 text-teal-400',
-    Peripherals: 'bg-pink-500/20 text-pink-400',
-    Monitor: 'bg-indigo-500/20 text-indigo-400',
-    Keyboard: 'bg-amber-500/20 text-amber-400',
-    Mouse: 'bg-lime-500/20 text-lime-400',
+    GPU: 'bg-blue-500/15 text-blue-400',
+    CPU: 'bg-blue-500/15 text-blue-400',
+    RAM: 'bg-blue-500/15 text-blue-400',
+    Storage: 'bg-blue-500/15 text-blue-400',
+    Motherboard: 'bg-blue-500/15 text-blue-400',
+    PSU: 'bg-blue-500/15 text-blue-400',
+    Case: 'bg-blue-500/15 text-blue-400',
+    Cooling: 'bg-blue-500/15 text-blue-400',
+    Peripherals: 'bg-blue-500/15 text-blue-400',
+    Monitor: 'bg-blue-500/15 text-blue-400',
+    Keyboard: 'bg-blue-500/15 text-blue-400',
+    Mouse: 'bg-blue-500/15 text-blue-400',
   }
 
   const filteredProducts = selectedCategory
@@ -218,6 +280,19 @@ export default function Dashboard() {
             Nexus<span className="text-blue-500">Hub</span>
           </h1>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/cart')}
+              className="relative text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition cursor-pointer"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
+              </svg>
+              {cartItems.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                  {cartItems.length}
+                </span>
+              )}
+            </button>
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -286,17 +361,6 @@ export default function Dashboard() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Notification */}
-        {notification.message && (
-          <div className={`px-4 py-3 rounded-lg mb-4 text-sm font-medium ${
-            notification.type === 'success'
-              ? 'bg-green-500/20 border border-green-500 text-green-400'
-              : 'bg-red-500/20 border border-red-500 text-red-400'
-          }`}>
-            {notification.message}
-          </div>
-        )}
-
         {/* Landing page */}
         {!activeTab && (
           <div className="space-y-8">
@@ -389,17 +453,29 @@ export default function Dashboard() {
                             {product.quantity > 0 ? product.quantity + ' in stock' : 'Out of stock'}
                           </span>
                         </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleBuy(product) }}
-                          disabled={product.quantity <= 0}
-                          className={`w-full py-2.5 rounded-lg text-sm font-semibold transition cursor-pointer ${
-                            product.quantity > 0
-                              ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                              : 'bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
-                          }`}
-                        >
-                          {product.quantity > 0 ? 'Buy Now' : 'Sold Out'}
-                        </button>
+                        {product.quantity > 0 ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleAddToCart(product) }}
+                              className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition cursor-pointer bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200"
+                            >
+                              Add to Cart
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleBuy(product) }}
+                              className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition cursor-pointer bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                              Buy Now
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            disabled
+                            className="w-full py-2.5 rounded-lg text-sm font-semibold bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed"
+                          >
+                            Sold Out
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -536,18 +612,30 @@ export default function Dashboard() {
                         </span>
                       </div>
 
-                      {/* Buy button */}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleBuy(product) }}
-                        disabled={product.quantity <= 0}
-                        className={`w-full py-2.5 rounded-lg text-sm font-semibold transition cursor-pointer ${
-                          product.quantity > 0
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                            : 'bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
-                        {product.quantity > 0 ? 'Buy Now' : 'Sold Out'}
-                      </button>
+                      {/* Buy / Add to Cart buttons */}
+                      {product.quantity > 0 ? (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleAddToCart(product) }}
+                            className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition cursor-pointer bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200"
+                          >
+                            Add to Cart
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleBuy(product) }}
+                            className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition cursor-pointer bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            Buy Now
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          disabled
+                          className="w-full py-2.5 rounded-lg text-sm font-semibold bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed"
+                        >
+                          Sold Out
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -585,15 +673,28 @@ export default function Dashboard() {
                   {orders.length} {orders.length === 1 ? 'order' : 'orders'}
                 </span>
               </div>
-              <button
-                onClick={() => setActiveTab('products')}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition cursor-pointer flex items-center gap-2 w-fit"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
-                Continue Shopping
-              </button>
+              <div className="flex items-center gap-2">
+                {selectedOrders.length > 0 && (
+                  <button
+                    onClick={() => setBulkCancelConfirm(true)}
+                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm transition cursor-pointer flex items-center gap-2 w-fit"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Cancel Selected ({selectedOrders.length})
+                  </button>
+                )}
+                <button
+                  onClick={() => setActiveTab('products')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition cursor-pointer flex items-center gap-2 w-fit"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                  Continue Shopping
+                </button>
+              </div>
             </div>
 
             {orders.length === 0 ? (
@@ -612,6 +713,19 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-4">
+                {/* Select all bar */}
+                <div className="flex items-center gap-3 px-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedOrders.length === pendingOrders.length && pendingOrders.length > 0}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer accent-blue-600"
+                  />
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">
+                    {selectedOrders.length > 0 ? selectedOrders.length + ' selected' : 'Select all'}
+                  </span>
+                </div>
+
                 {orders.map(order => {
                   const product = order.Product
                   const orderDate = order.order_date ? new Date(order.order_date).toLocaleDateString('en-US', {
@@ -619,10 +733,22 @@ export default function Dashboard() {
                   }) : 'N/A'
 
                   return (
-                    <div key={order.order_id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:border-gray-400 dark:hover:border-gray-600 transition">
+                    <div key={order.order_id} className={`bg-white dark:bg-gray-800 border rounded-xl p-5 transition ${
+                      selectedOrders.includes(order.order_id) ? 'border-blue-500' : 'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600'
+                    }`}>
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                        {/* Left: product info */}
+                        {/* Left: checkbox + product info */}
                         <div className="flex gap-4">
+                          {order.status === 'Pending' ? (
+                            <input
+                              type="checkbox"
+                              checked={selectedOrders.includes(order.order_id)}
+                              onChange={() => toggleOrderSelect(order.order_id)}
+                              className="w-4 h-4 mt-1 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer accent-blue-600 flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-4 h-4 mt-1 flex-shrink-0" />
+                          )}
                           {/* Product image */}
                           <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-gray-200 dark:from-gray-700 to-gray-300 dark:to-gray-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
                             {product && product.image_url ? (
@@ -658,20 +784,36 @@ export default function Dashboard() {
                           </div>
                         </div>
 
-                        {/* Right: price and actions */}
+                        {/* Right: price, status, and actions */}
                         <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-3">
                           <span className="text-blue-400 text-xl font-bold">
                             ₱{Number(order.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
-                          <button
-                            onClick={() => handleDeleteOrder(order)}
-                            className="text-red-400 hover:text-red-300 text-xs font-medium flex items-center gap-1 transition cursor-pointer"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                            Cancel Order
-                          </button>
+                          <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${statusColors[order.status] || 'bg-gray-500/15 text-gray-400'}`}>
+                            {order.status || 'Pending'}
+                          </span>
+                          {order.status === 'Pending' && (
+                            <button
+                              onClick={() => handleDeleteOrder(order)}
+                              className="text-red-400 hover:text-red-300 text-xs font-medium flex items-center gap-1 transition cursor-pointer"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                              Cancel Order
+                            </button>
+                          )}
+                          {order.status === 'Delivered' && (
+                            <button
+                              onClick={() => setReceiveConfirm(order)}
+                              className="text-green-400 hover:text-green-300 text-xs font-medium flex items-center gap-1 transition cursor-pointer"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              Order Received
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1124,6 +1266,83 @@ export default function Dashboard() {
                 className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-700 text-white transition cursor-pointer"
               >
                 Yes, Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Cancel Confirmation Modal */}
+      {bulkCancelConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl">
+            <div className="w-14 h-14 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+
+            <h3 className="text-gray-900 dark:text-white text-lg font-semibold text-center mb-2">Cancel {selectedOrders.length} Order{selectedOrders.length > 1 ? 's' : ''}</h3>
+
+            <p className="text-gray-600 dark:text-gray-400 text-sm text-center mb-5">
+              Are you sure you want to cancel {selectedOrders.length} selected order{selectedOrders.length > 1 ? 's' : ''}? This action cannot be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setBulkCancelConfirm(false)}
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition cursor-pointer"
+              >
+                Keep Orders
+              </button>
+              <button
+                onClick={confirmBulkCancel}
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-700 text-white transition cursor-pointer"
+              >
+                Yes, Cancel All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Received Modal */}
+      {receiveConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl">
+            <div className="w-14 h-14 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+
+            <h3 className="text-gray-900 dark:text-white text-lg font-semibold text-center mb-2">Confirm Receipt</h3>
+
+            <p className="text-gray-600 dark:text-gray-400 text-sm text-center mb-2">
+              Have you received this order?
+            </p>
+
+            <div className="bg-gray-100 dark:bg-gray-900/50 rounded-lg p-3 mb-5">
+              <p className="text-gray-900 dark:text-white text-sm font-medium">
+                {receiveConfirm.Product ? receiveConfirm.Product.product_name : 'Order #' + receiveConfirm.order_id}
+              </p>
+              <p className="text-gray-500 text-xs mt-1">
+                ₱{Number(receiveConfirm.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setReceiveConfirm(null)}
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition cursor-pointer"
+              >
+                Not Yet
+              </button>
+              <button
+                onClick={handleConfirmReceived}
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-green-600 hover:bg-green-700 text-white transition cursor-pointer"
+              >
+                Yes, Received
               </button>
             </div>
           </div>
