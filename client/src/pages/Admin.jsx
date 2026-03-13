@@ -103,8 +103,10 @@ export default function Admin() {
   const [data, setData] = useState({ customers: [], products: [], orders: [] })
   const [modal, setModal] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [viewCustomer, setViewCustomer] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
   const [productCategory, setProductCategory] = useState(null)
+  const [customerSearch, setCustomerSearch] = useState('')
   const settingsRef = useRef(null)
   const navigate = useNavigate()
   const dispatch = useDispatch()
@@ -231,6 +233,17 @@ export default function Admin() {
     }
   }
 
+  const handleView = async (row) => {
+    try {
+      const res = await fetch('/api/customers/' + row.customer_id, { headers })
+      if (!res.ok) return
+      const customer = await res.json()
+      setViewCustomer(customer)
+    } catch {
+      dispatch(showNotification('Failed to load customer profile', 'error'))
+    }
+  }
+
   const handleLogout = () => {
     dispatch(logout())
     navigate('/login')
@@ -307,14 +320,45 @@ export default function Admin() {
         {/* All Tables */}
         {sections.map(section => {
           const isProducts = section.key === 'products'
-          const tableData = isProducts && productCategory
-            ? data.products.filter(p => p.category === productCategory)
-            : data[section.key]
+          const isCustomers = section.key === 'customers'
+          let tableData = data[section.key]
+          if (isProducts && productCategory) {
+            tableData = data.products.filter(p => p.category === productCategory)
+          }
+          if (isCustomers && customerSearch.trim()) {
+            const q = customerSearch.trim().toLowerCase()
+            tableData = data.customers.filter(c =>
+              (c.first_name || '').toLowerCase().includes(q) ||
+              (c.last_name || '').toLowerCase().includes(q) ||
+              (c.email || '').toLowerCase().includes(q)
+            )
+          }
 
           return (
             <div key={section.key}>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{section.label}</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{section.label}</h2>
+                  {isCustomers && customerSearch.trim() && (
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {tableData.length} result{tableData.length !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+                {isCustomers && (
+                  <div className="relative">
+                    <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="Search by name or email..."
+                      value={customerSearch}
+                      onChange={(e) => setCustomerSearch(e.target.value)}
+                      className="pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+                    />
+                  </div>
+                )}
                 {section.canAdd && (
                   <button onClick={() => handleAdd(section)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition cursor-pointer">
                     + Add {section.label.slice(0, -1)}
@@ -353,6 +397,7 @@ export default function Admin() {
                 data={tableData}
                 onEdit={(row) => handleEdit(section, row)}
                 onDelete={(row) => handleDelete(section, row)}
+                onView={section.key === 'customers' ? handleView : undefined}
               />
             </div>
           )
@@ -368,6 +413,102 @@ export default function Admin() {
           onClose={() => setModal(null)}
           onSave={handleSave}
         />
+      )}
+
+      {/* Customer Profile Panel */}
+      {viewCustomer && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl w-full max-w-2xl mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Customer Profile</h3>
+              <button onClick={() => setViewCustomer(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition cursor-pointer">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Profile Header */}
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-bold">
+                  {(viewCustomer.first_name?.[0] || '').toUpperCase()}{(viewCustomer.last_name?.[0] || '').toUpperCase()}
+                </div>
+                <div>
+                  <h4 className="text-xl font-bold text-gray-900 dark:text-white">{viewCustomer.first_name} {viewCustomer.last_name}</h4>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">{viewCustomer.email}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Phone</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{viewCustomer.phone || 'N/A'}</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Age</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{viewCustomer.age || 'N/A'}</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Birth Date</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{viewCustomer.birth_date || 'N/A'}</p>
+                </div>
+              </div>
+
+              {/* Address */}
+              <div>
+                <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Address</h5>
+                {viewCustomer.address ? (
+                  <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
+                    <p className="text-sm text-gray-900 dark:text-white">{viewCustomer.address.street_address}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{viewCustomer.address.city}, {viewCustomer.address.postal_code}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 italic">No address on file</p>
+                )}
+              </div>
+
+              {/* Order History */}
+              <div>
+                <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Order History</h5>
+                {viewCustomer.orders && viewCustomer.orders.length > 0 ? (
+                  <div className="space-y-2">
+                    {viewCustomer.orders.map(order => {
+                      const statusColors = {
+                        Pending: 'bg-yellow-500/15 text-yellow-400',
+                        Processing: 'bg-blue-500/15 text-blue-400',
+                        Shipped: 'bg-purple-500/15 text-purple-400',
+                        Delivered: 'bg-orange-500/15 text-orange-400',
+                        Completed: 'bg-green-500/15 text-green-400',
+                        Cancelled: 'bg-red-500/15 text-red-400',
+                      }
+                      return (
+                        <div key={order.order_id} className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">{order.product?.product_name || 'Unknown Product'}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {order.order_number} &middot; {order.order_date ? new Date(order.order_date).toLocaleDateString() : 'N/A'}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                              ${Number(order.total_amount || 0).toFixed(2)}
+                            </span>
+                            <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${statusColors[order.status] || 'bg-gray-500/15 text-gray-400'}`}>
+                              {order.status || 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 italic">No orders yet</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Delete Confirmation Modal */}

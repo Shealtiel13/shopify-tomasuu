@@ -7,6 +7,9 @@ import Dashboard from './pages/Dashboard'
 import ProductDetail from './pages/ProductDetail'
 import Admin from './pages/Admin'
 import Cart from './pages/Cart'
+import ForgotPassword from './pages/ForgotPassword'
+=======
+import Cart from './pages/Cart'
 
 function ProtectedRoute({ children }) {
   const token = useSelector((state) => state.auth.token)
@@ -42,6 +45,7 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/product/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
       <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />

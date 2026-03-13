@@ -8,6 +8,7 @@ export default function Register() {
   })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [emailError, setEmailError] = useState('')
   const navigate = useNavigate()
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
@@ -16,6 +17,7 @@ export default function Register() {
     e.preventDefault()
     setError('')
     setSuccess('')
+    setEmailError('')
 
     try {
       const res = await fetch('/api/register', {
@@ -26,7 +28,11 @@ export default function Register() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error)
+        if (res.status === 409) {
+          setEmailError(data.error)
+        } else {
+          setError(data.error)
+        }
         return
       }
 
@@ -68,9 +74,10 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-gray-600 dark:text-gray-300 text-sm font-medium mb-1">Email</label>
-              <input type="email" name="email" value={form.email} onChange={handleChange} required
-                className={inputClass} placeholder="Enter your email address" />
+              <label className={`block text-sm font-medium mb-1 ${emailError ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'}`}>Email</label>
+              <input type="email" name="email" value={form.email} onChange={(e) => { handleChange(e); setEmailError('') }} required
+                className={`${inputClass} ${emailError ? '!border-red-500 !bg-red-500/10' : ''}`} placeholder="Enter your email address" />
+              {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

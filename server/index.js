@@ -21,6 +21,9 @@ app.use('/api/login', require('./routes/loginRoutes'));
 app.use('/api/addresses', require('./routes/addressRoutes'));
 app.use('/api/ai', require('./routes/aiAssistantRoutes'));
 app.use('/api/cart', require('./routes/cartRoutes'));
+app.use('/api/profile', require('./routes/profileRoutes'));
+app.use('/api/forgot-password', require('./routes/forgotPasswordRoutes'));
+=======
 
 app.get(/^\/(?!api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
