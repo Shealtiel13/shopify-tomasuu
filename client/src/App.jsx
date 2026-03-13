@@ -5,11 +5,8 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import ProductDetail from './pages/ProductDetail'
 import Admin from './pages/Admin'
-<<<<<<< Updated upstream
-=======
 import Cart from './pages/Cart'
 import ForgotPassword from './pages/ForgotPassword'
->>>>>>> Stashed changes
 
 function ProtectedRoute({ children }) {
   const token = useSelector((state) => state.auth.token)
