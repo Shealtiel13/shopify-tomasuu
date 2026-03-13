@@ -35,7 +35,7 @@ export default function DataTable({ columns, data, onEdit, onDelete, onView, emp
               {columns.map(col => (
 <<<<<<< Updated upstream
                 <td key={col.key} className={`px-4 py-3 ${col.bold ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-600 dark:text-gray-300'}`}>
-                  {col.mask ? '••••••••' : (row[col.key] || '')}
+                  {col.render ? col.render(row[col.key], row) : col.mask ? '••••••••' : (row[col.key] || '')}
                 </td>
               ))}
               <td className="px-4 py-3">

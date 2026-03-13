@@ -54,7 +54,17 @@ export default function Modal({ title, fields, data, onClose, onSave }) {
           {fields.map(f => (
             <div key={f.key}>
               <label className="block text-gray-600 dark:text-gray-300 text-sm font-medium mb-1">{f.label}</label>
-              {f.type === 'file' ? (
+              {f.type === 'select' ? (
+                <select
+                  value={form[f.key] || ''}
+                  onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                >
+                  {f.options.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              ) : f.type === 'file' ? (
                 <div>
                   <input
                     type="file"
