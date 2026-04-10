@@ -20,7 +20,7 @@ export const fetchMyOrders = createAsyncThunk(
 
 export const placeOrder = createAsyncThunk(
   'orders/place',
-  async ({ product_id, total_amount }, { getState, rejectWithValue }) => {
+  async ({ product_id, total_amount, payment_method = 'cod' }, { getState, rejectWithValue }) => {
     const { token } = getState().auth
     const res = await fetch('/api/orders', {
       method: 'POST',
@@ -32,6 +32,7 @@ export const placeOrder = createAsyncThunk(
         product_id,
         order_date: new Date().toISOString().split('T')[0],
         total_amount,
+        payment_method,
       }),
     })
     if (!res.ok) {
@@ -75,6 +76,24 @@ export const confirmOrder = createAsyncThunk(
     if (!res.ok) {
       const err = await res.json()
       return rejectWithValue(err.error || 'Failed to confirm order')
+    }
+    return await res.json()
+  }
+)
+
+export const fetchTracking = createAsyncThunk(
+  'orders/fetchTracking',
+  async (orderId, { getState, rejectWithValue }) => {
+    const { token } = getState().auth
+    const res = await fetch('/api/orders/' + orderId + '/tracking', {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token,
+      },
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      return rejectWithValue(err.error || 'Failed to fetch tracking')
     }
     return await res.json()
   }

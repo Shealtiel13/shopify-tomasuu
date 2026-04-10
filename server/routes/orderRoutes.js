@@ -1,11 +1,14 @@
 const router = require('express').Router();
 const controller = require('../controllers/orderController');
 const auth = require('../middleware/auth');
+const admin = require('../middleware/admin');
 
 router.get('/', auth, controller.getAll);
 router.get('/my', auth, controller.getMyOrders);
 router.patch('/my/:id/confirm', auth, controller.confirmReceived);
 router.patch('/my/:id/cancel', auth, controller.cancel);
+router.get('/:id/tracking', auth, controller.getTracking);
+router.patch('/:id/status', admin, controller.updateStatus);
 router.get('/:id', auth, controller.getById);
 router.post('/', auth, controller.create);
 router.put('/:id', auth, controller.update);

@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const CustomerOrder = require('../models/customerorder');
 const Customer = require('../models/customer');
 const Product = require('../models/product');
+const OrderStatusHistory = require('../models/orderstatushistory');
 
 function generateOrderNumber() {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -47,10 +48,9 @@ exports.getById = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    console.log('Order create - req.user:', req.user);
     const customer = await Customer.findOne({ where: { reg_id: req.user.reg_id } });
-    console.log('Order create - customer found:', customer ? customer.customer_id : 'NOT FOUND');
     if (!customer) return res.status(404).json({ error: 'Customer profile not found' });
+    const payment_method = req.body.payment_method || 'cod';
     const order = await CustomerOrder.create({
       order_number: generateOrderNumber(),
       product_id: req.body.product_id,
@@ -58,8 +58,14 @@ exports.create = async (req, res) => {
       total_amount: req.body.total_amount,
       customer_id: customer.customer_id,
       status: 'Pending',
+      payment_method,
     });
-    console.log('Order create - order created:', order.order_id, 'customer_id:', order.customer_id);
+    await Payment.create({
+      order_id: order.order_id,
+      method: payment_method,
+      status: 'pending',
+      amount: req.body.total_amount,
+    });
     res.status(201).json(order);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -91,6 +97,13 @@ exports.confirmReceived = async (req, res) => {
     if (order.customer_id !== customer.customer_id) return res.status(403).json({ error: 'Not your order' });
     if (order.status !== 'Delivered') return res.status(400).json({ error: 'Order can only be confirmed when Delivered' });
     await order.update({ status: 'Completed' });
+    await OrderStatusHistory.create({
+      order_id: order.order_id,
+      from_status: 'Delivered',
+      to_status: 'Completed',
+      changed_by: req.user.username || 'customer',
+      notes: 'Customer confirmed receipt',
+    });
     res.json(order);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -105,8 +118,60 @@ exports.cancel = async (req, res) => {
     if (!order) return res.status(404).json({ error: 'Order not found' });
     if (order.customer_id !== customer.customer_id) return res.status(403).json({ error: 'Not your order' });
     if (order.status !== 'Pending') return res.status(400).json({ error: 'Only Pending orders can be cancelled' });
+    const fromStatus = order.status;
     await order.update({ status: 'Cancelled' });
+    await OrderStatusHistory.create({
+      order_id: order.order_id,
+      from_status: fromStatus,
+      to_status: 'Cancelled',
+      changed_by: req.user.username || 'customer',
+      notes: 'Customer cancelled order',
+    });
     res.json({ message: 'Order cancelled' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Admin: update order status
+exports.updateStatus = async (req, res) => {
+  try {
+    const order = await CustomerOrder.findByPk(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    const { status, notes } = req.body;
+    if (!status || !VALID_STATUSES.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status value' });
+    }
+    const fromStatus = order.status;
+    if (fromStatus === status) {
+      return res.status(400).json({ error: 'Order is already ' + status });
+    }
+    await order.update({ status });
+    await OrderStatusHistory.create({
+      order_id: order.order_id,
+      from_status: fromStatus,
+      to_status: status,
+      changed_by: req.user.username || 'admin',
+      notes: notes || null,
+    });
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Get order tracking history
+exports.getTracking = async (req, res) => {
+  try {
+    const order = await CustomerOrder.findByPk(req.params.id, {
+      include: [{ model: Product, attributes: ['product_name', 'category', 'image_url'] }],
+    });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    const history = await OrderStatusHistory.findAll({
+      where: { order_id: order.order_id },
+      order: [['created_at', 'ASC']],
+    });
+    res.json({ order, history });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

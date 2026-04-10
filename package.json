@@ -15,7 +15,7 @@
     "sequelize-auto": "^0.8.8",
     "sqlite3": "^5.1.7"
   },
-  "name": "api-activity",
+  "name": "pc-shop",
   "version": "1.0.0",
   "description": "",
   "main": "server/index.js",

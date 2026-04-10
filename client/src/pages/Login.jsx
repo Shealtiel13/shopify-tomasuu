@@ -28,7 +28,7 @@ export default function Login() {
       }
 
       dispatch(setCredentials({ token: data.token, username, role: data.role, firstName: data.first_name }))
-      navigate(data.role === 'admin' ? '/admin' : '/dashboard')
+      navigate('/dashboard')
     } catch {
       setError('Something went wrong. Please try again.')
     }

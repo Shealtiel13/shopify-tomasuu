@@ -23,7 +23,15 @@ app.use('/api/ai', require('./routes/aiAssistantRoutes'));
 app.use('/api/cart', require('./routes/cartRoutes'));
 app.use('/api/profile', require('./routes/profileRoutes'));
 app.use('/api/forgot-password', require('./routes/forgotPasswordRoutes'));
+app.use('/api/payments', require('./routes/paymentRoutes'));
 
+// Admin SPA
+app.use('/admin', express.static(path.join(__dirname, '..', 'public', 'admin')));
+app.get(/^\/admin(\/.*)?$/, (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin', 'index.html'));
+});
+
+// Shop SPA
 app.get(/^\/(?!api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });

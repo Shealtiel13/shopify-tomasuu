@@ -8,7 +8,8 @@ const CustomerOrder = sequelize.define('CustomerOrder', {
   product_id: DataTypes.INTEGER,
   order_date: DataTypes.DATE,
   total_amount: DataTypes.DECIMAL,
-  status: { type: DataTypes.STRING, defaultValue: 'Pending' }
+  status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+  payment_method: { type: DataTypes.STRING, defaultValue: 'cod' }
 }, {
   tableName: 'customer_order',
   timestamps: false

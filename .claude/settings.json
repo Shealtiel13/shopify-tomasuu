@@ -9,7 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd /Users/devteam/Desktop/project/backend-practice/API-activity && npx eslint --no-error-on-unmatched-pattern \"$CLAUDE_FILE_PATH\" 2>/dev/null || echo 'ESLint: check file for issues'"
+            "command": "cd /Users/devteam/Desktop/project/backend-practice/PC-SHOP && npx eslint --no-error-on-unmatched-pattern \"$CLAUDE_FILE_PATH\" 2>/dev/null || echo 'ESLint: check file for issues'"
           }
         ]
       },

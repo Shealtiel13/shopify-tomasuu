@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { logout } from '../store/authSlice'
 import { fetchProducts } from '../store/productSlice'
-import { fetchMyOrders, placeOrder, cancelOrder, confirmOrder } from '../store/orderSlice'
+import { fetchMyOrders, placeOrder, cancelOrder, confirmOrder, fetchTracking } from '../store/orderSlice'
 import { addToCart, fetchCart } from '../store/cartSlice'
 import { showNotification } from '../store/notificationSlice'
 import { toggleDarkMode } from '../store/themeSlice'
@@ -18,14 +18,20 @@ export default function Dashboard() {
   const [selectedOrders, setSelectedOrders] = useState([])
   const [buyConfirm, setBuyConfirm] = useState(null)
   const [buyQty, setBuyQty] = useState(1)
+  const [paymentMethod, setPaymentMethod] = useState('cod')
   const [receiveConfirm, setReceiveConfirm] = useState(null)
+  const [trackingModal, setTrackingModal] = useState(null)
+  const [proofModal, setProofModal] = useState(null)
+  const [proofFile, setProofFile] = useState(null)
+  const [proofRef, setProofRef] = useState('')
+  const [proofUploading, setProofUploading] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || null)
   const [visibleProducts, setVisibleProducts] = useState(8)
   const dropdownRef = useRef(null)
   const navigate = useNavigate()
   const dispatch = useDispatch()
 
-  const { username, firstName } = useSelector((state) => state.auth)
+  const { username, firstName, token } = useSelector((state) => state.auth)
   const { items: products } = useSelector((state) => state.products)
   const { items: orders } = useSelector((state) => state.orders)
   const { items: cartItems } = useSelector((state) => state.cart)
@@ -151,6 +157,7 @@ export default function Dashboard() {
   const handleBuy = (product) => {
     setBuyConfirm(product)
     setBuyQty(1)
+    setPaymentMethod('cod')
   }
 
   const confirmBuy = async () => {
@@ -158,6 +165,7 @@ export default function Dashboard() {
     const result = await dispatch(placeOrder({
       product_id: buyConfirm.product_id,
       total_amount: Number(buyConfirm.price) * buyQty,
+      payment_method: paymentMethod,
     }))
     if (placeOrder.fulfilled.match(result)) {
       dispatch(showNotification('Solid choice! ' + buyQty + 'x ' + buyConfirm.product_name + ' added to your orders'))
@@ -236,6 +244,33 @@ export default function Dashboard() {
     } else {
       dispatch(showNotification(result.payload || 'Failed to add to cart', 'error'))
     }
+  }
+
+  const handleUploadProof = async () => {
+    if (!proofModal || !proofFile) return
+    setProofUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('proof', proofFile)
+      if (proofRef) formData.append('reference_number', proofRef)
+      const res = await fetch('/api/payments/' + proofModal.order_id + '/proof', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+        body: formData,
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        dispatch(showNotification(data.error || 'Upload failed', 'error'))
+      } else {
+        dispatch(showNotification('Payment proof submitted! Awaiting admin verification.'))
+        setProofModal(null)
+        setProofFile(null)
+        setProofRef('')
+      }
+    } catch {
+      dispatch(showNotification('Upload failed', 'error'))
+    }
+    setProofUploading(false)
   }
 
   const handleLogout = () => {
@@ -792,6 +827,11 @@ export default function Dashboard() {
                           <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${statusColors[order.status] || 'bg-gray-500/15 text-gray-400'}`}>
                             {order.status || 'Pending'}
                           </span>
+                          {order.payment_method === 'gcash' && (
+                            <span className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">
+                              GCash
+                            </span>
+                          )}
                           {order.status === 'Pending' && (
                             <button
                               onClick={() => handleDeleteOrder(order)}
@@ -812,6 +852,31 @@ export default function Dashboard() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
                               Order Received
+                            </button>
+                          )}
+                          {order.payment_method === 'gcash' && order.status === 'Pending' && (
+                            <button
+                              onClick={() => { setProofModal(order); setProofFile(null); setProofRef('') }}
+                              className="text-blue-400 hover:text-blue-300 text-xs font-medium flex items-center gap-1 transition cursor-pointer"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              Upload Proof
+                            </button>
+                          )}
+                          {order.status !== 'Cancelled' && (
+                            <button
+                              onClick={async () => {
+                                const result = await dispatch(fetchTracking(order.order_id)).unwrap()
+                                setTrackingModal(result)
+                              }}
+                              className="text-purple-400 hover:text-purple-300 text-xs font-medium flex items-center gap-1 transition cursor-pointer"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                              </svg>
+                              Track
                             </button>
                           )}
                         </div>
@@ -1198,11 +1263,50 @@ export default function Dashboard() {
             </div>
 
             {/* Total */}
-            <div className="flex items-center justify-between bg-gray-100 dark:bg-gray-900/50 rounded-lg p-3 mb-5">
+            <div className="flex items-center justify-between bg-gray-100 dark:bg-gray-900/50 rounded-lg p-3 mb-4">
               <span className="text-gray-600 dark:text-gray-400 text-sm">Total</span>
               <span className="text-blue-400 text-xl font-bold">
                 ₱{(Number(buyConfirm.price) * buyQty).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
+            </div>
+
+            {/* Payment Method */}
+            <div className="mb-5">
+              <label className="text-gray-600 dark:text-gray-400 text-sm mb-2 block">Payment Method</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setPaymentMethod('cod')}
+                  className={`p-3 rounded-lg border text-sm font-medium transition cursor-pointer ${
+                    paymentMethod === 'cod'
+                      ? 'border-blue-500 bg-blue-500/10 text-blue-400'
+                      : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    COD
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-1">Cash on Delivery</p>
+                </button>
+                <button
+                  onClick={() => setPaymentMethod('gcash')}
+                  className={`p-3 rounded-lg border text-sm font-medium transition cursor-pointer ${
+                    paymentMethod === 'gcash'
+                      ? 'border-blue-500 bg-blue-500/10 text-blue-400'
+                      : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    GCash
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-1">Upload proof after</p>
+                </button>
+              </div>
             </div>
 
             {/* Buttons */}
@@ -1344,6 +1448,145 @@ export default function Dashboard() {
               >
                 Yes, Received
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* GCash Proof Upload Modal */}
+      {proofModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl">
+            <div className="w-14 h-14 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+
+            <h3 className="text-gray-900 dark:text-white text-lg font-semibold text-center mb-1">Upload GCash Proof</h3>
+            <p className="text-gray-500 dark:text-gray-400 text-xs text-center mb-4">{proofModal.order_number}</p>
+
+            <div className="mb-4">
+              <label className="text-gray-600 dark:text-gray-400 text-sm mb-1 block">GCash Reference Number</label>
+              <input
+                type="text"
+                value={proofRef}
+                onChange={(e) => setProofRef(e.target.value)}
+                placeholder="e.g. 1234 567 890"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="text-gray-600 dark:text-gray-400 text-sm mb-1 block">Screenshot of Payment</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setProofFile(e.target.files[0] || null)}
+                className="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer cursor-pointer"
+              />
+              {proofFile && (
+                <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                  <img src={URL.createObjectURL(proofFile)} alt="Proof preview" className="w-full max-h-40 object-contain bg-gray-50 dark:bg-gray-900" />
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setProofModal(null); setProofFile(null); setProofRef('') }}
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUploadProof}
+                disabled={!proofFile || proofUploading}
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition cursor-pointer disabled:opacity-50"
+              >
+                {proofUploading ? 'Uploading...' : 'Submit Proof'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tracking Modal */}
+      {trackingModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Order Tracking</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{trackingModal.order.order_number}</p>
+              </div>
+              <button onClick={() => setTrackingModal(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition cursor-pointer">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6">
+              {/* Status Progress */}
+              {(() => {
+                const statuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Completed']
+                const currentIdx = statuses.indexOf(trackingModal.order.status)
+                const isCancelled = trackingModal.order.status === 'Cancelled'
+                return (
+                  <div className="flex items-center justify-between mb-6">
+                    {statuses.map((s, i) => (
+                      <div key={s} className="flex flex-col items-center flex-1">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                          isCancelled ? 'bg-red-500/20 text-red-400' :
+                          i <= currentIdx ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
+                        }`}>
+                          {i <= currentIdx && !isCancelled ? '✓' : i + 1}
+                        </div>
+                        <span className={`text-[10px] mt-1 ${i <= currentIdx && !isCancelled ? 'text-blue-400 font-medium' : 'text-gray-400'}`}>{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+
+              {/* Timeline */}
+              {trackingModal.history.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 italic">No status changes recorded yet.</p>
+              ) : (
+                <div className="relative">
+                  <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
+                  <div className="space-y-4">
+                    {trackingModal.history.map((entry, i) => {
+                      const statusColors = {
+                        Pending: 'bg-yellow-500',
+                        Processing: 'bg-blue-500',
+                        Shipped: 'bg-purple-500',
+                        Delivered: 'bg-orange-500',
+                        Completed: 'bg-green-500',
+                        Cancelled: 'bg-red-500',
+                      }
+                      return (
+                        <div key={entry.history_id || i} className="relative flex gap-4 pl-8">
+                          <div className={`absolute left-1.5 top-1 w-3 h-3 rounded-full ${statusColors[entry.to_status] || 'bg-gray-500'} ring-2 ring-white dark:ring-gray-800`}></div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                {entry.from_status ? `${entry.from_status} → ${entry.to_status}` : entry.to_status}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                              {new Date(entry.created_at).toLocaleString()}
+                            </p>
+                            {entry.notes && (
+                              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 bg-gray-50 dark:bg-gray-900/50 rounded px-2 py-1">{entry.notes}</p>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

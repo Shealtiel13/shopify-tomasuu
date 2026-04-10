@@ -5,6 +5,7 @@ const CartItem = require('../models/cartitem');
 const Product = require('../models/product');
 const Customer = require('../models/customer');
 const CustomerOrder = require('../models/customerorder');
+const Payment = require('../models/payment');
 
 Cart.hasMany(CartItem, { foreignKey: 'cart_id', onDelete: 'CASCADE' });
 CartItem.belongsTo(Cart, { foreignKey: 'cart_id' });
@@ -177,6 +178,7 @@ exports.checkout = async (req, res) => {
     }
 
     // Create orders and decrement stock
+    const payment_method = req.body.payment_method || 'cod';
     const orders = [];
     for (const item of items) {
       await Product.update(
@@ -184,13 +186,22 @@ exports.checkout = async (req, res) => {
         { where: { product_id: item.product_id }, transaction: t }
       );
 
+      const orderAmount = Number(item.price_at_add) * item.quantity;
       const order = await CustomerOrder.create({
         order_number: generateOrderNumber(),
         customer_id: customer.customer_id,
         product_id: item.product_id,
         order_date: new Date(),
-        total_amount: Number(item.price_at_add) * item.quantity,
-        status: 'Pending'
+        total_amount: orderAmount,
+        status: 'Pending',
+        payment_method,
+      }, { transaction: t });
+
+      await Payment.create({
+        order_id: order.order_id,
+        method: payment_method,
+        status: 'pending',
+        amount: orderAmount,
       }, { transaction: t });
 
       orders.push(order);

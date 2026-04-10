@@ -4,15 +4,16 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  base: '/admin/',
   server: {
-    port: 5173,
+    port: 5174,
     proxy: {
       '/api': 'http://localhost:3000',
       '/uploads': 'http://localhost:3000'
     }
   },
   build: {
-    outDir: '../public',
-    emptyOutDir: false
+    outDir: '../public/admin',
+    emptyOutDir: true
   }
 })

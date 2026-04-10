@@ -1,16 +1,19 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { clearNotification } from './store/notificationSlice'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import Dashboard from './pages/Dashboard'
-import ProductDetail from './pages/ProductDetail'
-import Cart from './pages/Cart'
-import ForgotPassword from './pages/ForgotPassword'
+import AdminLayout from './layouts/AdminLayout'
+import AdminLogin from './pages/AdminLogin'
+import AdminOverview from './pages/AdminOverview'
+import AdminCustomers from './pages/AdminCustomers'
+import AdminProducts from './pages/AdminProducts'
+import AdminOrders from './pages/AdminOrders'
+import AdminPayments from './pages/AdminPayments'
 
-function ProtectedRoute({ children }) {
-  const token = useSelector((state) => state.auth.token)
-  return token ? children : <Navigate to="/login" />
+function AdminProtectedRoute({ children }) {
+  const { token, role } = useSelector((state) => state.adminAuth)
+  if (!token) return <Navigate to="/login" />
+  if (role !== 'admin') return <Navigate to="/login" />
+  return children
 }
 
 function Toast() {
@@ -40,12 +43,14 @@ function App() {
     <>
     <Toast />
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/product/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
-      <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+      <Route path="/login" element={<AdminLogin />} />
+      <Route path="/" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
+        <Route index element={<AdminOverview />} />
+        <Route path="customers" element={<AdminCustomers />} />
+        <Route path="products" element={<AdminProducts />} />
+        <Route path="orders" element={<AdminOrders />} />
+        <Route path="payments" element={<AdminPayments />} />
+      </Route>
       <Route path="*" element={<Navigate to="/login" />} />
     </Routes>
     </>

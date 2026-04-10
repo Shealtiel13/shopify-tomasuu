@@ -74,9 +74,10 @@ export const clearCart = createAsyncThunk(
 
 export const checkoutCart = createAsyncThunk(
   'cart/checkout',
-  async (cart_item_ids, { getState, rejectWithValue }) => {
+  async ({ cart_item_ids, payment_method = 'cod' } = {}, { getState, rejectWithValue }) => {
     const { token } = getState().auth
-    const body = cart_item_ids && cart_item_ids.length > 0 ? { cart_item_ids } : {}
+    const body = { payment_method }
+    if (cart_item_ids && cart_item_ids.length > 0) body.cart_item_ids = cart_item_ids
     const res = await fetch('/api/cart/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },

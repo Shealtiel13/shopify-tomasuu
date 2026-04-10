@@ -11,6 +11,7 @@ export default function Cart() {
   const [checkingOut, setCheckingOut] = useState(false)
   const [selectedItems, setSelectedItems] = useState([])
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState('cod')
 
   useEffect(() => { dispatch(fetchCart()) }, [dispatch])
 
@@ -66,7 +67,7 @@ export default function Cart() {
       return
     }
     setCheckingOut(true)
-    const result = await dispatch(checkoutCart(selectedItems))
+    const result = await dispatch(checkoutCart({ cart_item_ids: selectedItems, payment_method: paymentMethod }))
     if (checkoutCart.fulfilled.match(result)) {
       dispatch(showNotification('Checkout successful! ' + result.payload.orders.length + ' order(s) placed.'))
       setSelectedItems([])
@@ -229,6 +230,45 @@ export default function Cart() {
                   ₱{(selectedItems.length > 0 ? selectedTotal : total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
+              {/* Payment Method */}
+              <div className="mb-4">
+                <label className="text-gray-600 dark:text-gray-400 text-sm mb-2 block">Payment Method</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setPaymentMethod('cod')}
+                    className={`p-3 rounded-lg border text-sm font-medium transition cursor-pointer ${
+                      paymentMethod === 'cod'
+                        ? 'border-blue-500 bg-blue-500/10 text-blue-400'
+                        : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      COD
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-1">Cash on Delivery</p>
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethod('gcash')}
+                    className={`p-3 rounded-lg border text-sm font-medium transition cursor-pointer ${
+                      paymentMethod === 'gcash'
+                        ? 'border-blue-500 bg-blue-500/10 text-blue-400'
+                        : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      GCash
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-1">Upload proof after</p>
+                  </button>
+                </div>
+              </div>
+
               <div className="flex gap-3">
                 <button
                   onClick={() => navigate('/dashboard?tab=products')}
